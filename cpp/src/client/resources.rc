@@ -1,0 +1,56 @@
+// AutoPatcher Client Resource File
+// Microsoft Visual C++ generated resource script.
+
+#include <windows.h>
+
+// Resource IDs
+#define ID_CONFIG           1001
+#define ID_SKIN_DATA        1002
+#define ID_BACKGROUND       1003
+#define ID_BUTTON_NORMAL    1004
+#define ID_BUTTON_HOVER     1005
+#define ID_BUTTON_PRESSED   1006
+#define ID_CUSTOM_FONT      1007
+#define ID_HTML_CONTENT     1008
+#define ID_CSS_CONTENT      1009
+#define ID_JS_CONTENT       1010
+
+// Manifest for visual styles
+1 RT_MANIFEST "client.manifest"
+
+// Application icon (uncomment when icon.ico exists)
+// IDI_ICON1 ICON "icon.ico"
+
+// Version info
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0
+FILEOS VOS__WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "AutoPatch Community"
+            VALUE "FileDescription", "AutoPatch Client"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "AutoPatcher"
+            VALUE "LegalCopyright", "Copyright (C) 2024 - Cremane (saadrcaa@gmail.com)"
+            VALUE "OriginalFilename", "AutoPatcher.exe"
+            VALUE "ProductName", "AutoPatch Community"
+            VALUE "ProductVersion", "1.0.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+// Placeholder resources (will be replaced by builder)
+// ID_CONFIG RCDATA { 0 }
+// ID_BACKGROUND RCDATA { 0 }

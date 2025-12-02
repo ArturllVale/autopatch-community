@@ -1,0 +1,7 @@
+# AutoPatch Community Patchlist
+# Format: ID FILENAME [target=X] [extract=true] [hash=X] [size=X]
+
+1 patch001.thor target=data.grf hash=abc123def456 size=1024000
+2 patch002.thor target=data.grf hash=789ghi012jkl size=512000
+3 patch003.thor target=rdata.grf hash=mno345pqr678 size=256000
+4 patch004.rgz extract=true hash=stu901vwx234 size=128000

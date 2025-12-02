@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "downloadUrl": "http://patch.myserver.com/patcher/update.zip",
+  "hash": "abc123def456789",
+  "size": 5242880,
+  "mandatory": false,
+  "changelog": "- Bug fixes\n- Performance improvements"
+}

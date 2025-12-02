@@ -1,0 +1,36 @@
+====================================================================
+Elurair
+(c) 2012-2025 Ai4rei/AN
+
+====================================================================
+
+== Privacy =========================================================
+
+= Summary =
+
+    The patcher discloses your public IP address and platform
+information during normal operation over HTTP.
+
+= Full Disclosure =
+
+    As part of it's core functionality, the patcher communicates
+with the designated 3rd party web and patch server to retrieve patch
+information and files respectively. The communication happens over
+unsecured HTTP connections.
+
+    During the communication listed above, following information is
+disclosed as part of the protocol traffic:
+
+- HTTP:
+    - Public IP address of the source (implied).
+    - Elurair version (explicit, user-agent string).
+    - Windows* version and platform (explicit, user-agent string).
+
+    Due to the nature of this software, information is shared with
+a 3rd party, namely the distributor of a specific configuration of
+this software, who has control over the servers the patcher
+communicates with. The software distributor 3rd party has the
+obligation to inform the users of their configuration about
+information shared and processed to the extent defined by law.
+
+======================================================= 2024-07-27 =

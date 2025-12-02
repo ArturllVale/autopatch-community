@@ -1,0 +1,245 @@
+﻿====================================================================
+Elurair
+(c) 2012-2025 Ai4rei/AN
+
+====================================================================
+
+== History =========================================================
+
+[Version 2.19.0]
++ Added support for PNG transparent color though setting `SkinTransparencyType`.
++ Added `obliterate` patch list (V1) modifier to prevent pending patch processes from running.
+* Updated de-DE translation.
+* `https` is now an acceptable value for `WebProt` setting.
+! Fixed buttons would ignore transparency mask changes between state changes.
+
+[Version 2.18.1]
+! Builder: Fixed mojibake in PNG warning messages [reported by Neico].
+
+[Version 2.18.0]
++ Added support for displaying progress for the entire patch process rather than each individual patch file.
++ Added it-IT translation [TarArAis].
++ Builder: Added checking for possible problems in PNG skin files.
++ Builder: Added support for saving and loading of projects (presets) [suggested by Neico].
++ Builder: Added support for filling the Patcher and Configuration input fields by dropping a file on them.
+* DevMode now shows at which progress ID a patch process completed.
+* Patch lists with a UTF-8 signature will no longer cause patch process to fail, but will be processed as ASCII nevertheless.
+* Builder: Changed Elurair application icon will refresh immediately in open Explorer windows upon building [suggested by Neico].
+* [snippets::bvcopy] Failure to allocate copy-optimization buffer will no longer cause the copy operation to fail.
+! Fixed broken GRF patches could be accepted without errors.
+! Fixed broken GRF archives would not update the status bar with an error message (making patch process appear stuck).
+! Fixed internal handler errors would not update the status bar with an error message (making patch process appear stuck).
+! Fixed status bar debug messages were subject to the same rate limiting as the status bar itself.
+! Builder: Fixed PE checksum was not updated during build possibly triggering so called anti-virus software.
+! Builder: Fixed failed build could be followed by an incorrect success message.
+! [snippets::bvcopy] Fixed an out-of-memory issue when copying a large file with 32-bit release on 64-bit systems with more than 4 GiB free RAM.
+- Removed out-of-memory quick-fix from 2.17.0, as the underlying issue has been fixed and the quick-fix degraded patch performance for larger files.
+
+[Version 2.17.0]
++ Added th-TH translation [Kelberwitz].
++ Added `upgrade` key to PakFile to control whether oversized GRF archives can be upgraded to EH/3 format.
++ Added support for forcing window corners to be square.
++ Added `-elurair:firstrun` command line parameter to initialize missing InfFiles to 0.
++ Added `-elurair:noui` command line parameter to not display any UI.
++ [rsulib3] Added support for EH/3 format. Elurair accepts these both as GRF patches and GRF archives.
++ [rsulib3] Added support for read-only "old GRF" format. Elurair accepts these as GRF patches.
+* File extensions .gef and .gsf are now also considered GRF archive patches.
+* Browser controls now identify (user agent) as Elurair instead of Internet Explorer.
+* Builder: Overflowing skin file paths are now unfolded in an infotip.
+! Fixed an empty elurair.bini was created when running without embedded config.
+! Fixed user-agent string wasn't rendering correctly.
+! Quick-fixed an out-of-memory issue when updating unhandled file types with 32-bit release on 64-bit systems with more than 4 GiB free RAM.
+
+[Version 2.16.2]
++ Added right-click developer menu in developer mode.
+  + Adds means to modify the progress bar value at will.
+  + Adds means to modify the status bar value at will.
+* Updated Spanish localization [csnv].
+* Builder: Reorganized UI for future features.
+! Fixed CheckSave was saved incorrectly (since 2.16.0) [reported by 小玥].
+
+[Version 2.16.1]
++ Added support for external compiled configuration (.bini extension).
++ Builder: Added support for backing up Elurair before updating it.
+* Updated FAQ.
+* [aavc] Changed sample files to reduce harassment from so called anti-virus software.
+! Fixed 7-zip archive handler would not be registered.
+! [snippets::bvpng] Fixed crash when loading unsupported PNG files [reported by asty].
+! [snippets::bvunzip] Fixed crash when extracting ZIP files with deflated directory entries [reported by asty].
+! [snippets::kvdb::bini] Fixed loading compiled config could crash (since 2.16.0).
+! [snippets::kvdb::bini] Builder: Fixed saving compiled config could fail or crash (since 2.16.0).
+- Removed telemetry.
+
+[Version 2.16.0]
++ Added support for handling 7-Zip archives (unzip).
++ Added detailed `patch.inf` specification.
++ Added optional, experimental support for chunked transfers (HTTP).
++ Added support for custom (zlib) compress/uncompress implementations [includes suggestions by Neico].
++ Added optional, experimental support for transparent buttons.
+* Reworked the configuration loader.
+* Documented `MediaForegroundMute`.
+! Fixed processing ZIP archives could fail when subdirectories are involved.
+! Fixed Accept-Encoding (gzip, compress, ...) was not sent to the server, causing downloads to fail when the server decides to use a `Content-Encoding` other than `identity`.
+
+[Version 2.15.0]
++ Added ActionType 14 (popup button) to allow making menus and other popup UI elements.
++ Added fr_FR localization [RadK].
+* Improved documentation.
+! Fixed telemetry not reporting correctly on 64-bit builds (since 2.14.0).
+! Fixed releases contained a stray build of the custom toggle C sample (since 2.14.0).
+! Fixed BGM toggle would not honor BGM autostart setting (since 2.12.0).
+! [rsulib3] Fixed mixed-case file names could not be found (since 2.14.0).
+
+[Version 2.14.0]
++ Added support for native 64-bit builds.
++ Added ActionType 13 (Custom Toggle) to allow integrating custom binary settings/features.
+* Updated zlib to 1.3.1.
++ Builder: Added explanatory tooltips to some controls.
+* [rsulib3] Optimized loading performance of archives that contain millions of items [reported by Mictlah].
+  # Memory usage will increase somewhat because of this.
+! [rsulib3] Fixed memory leak when copying/moving of items fails.
+
+[Version 2.13.2]
+! Fixed background media would rewind on Windows Vista and newer (Media Foundation) when paused (either button or inactivity) [reported by Sapito Sucio].
+! Fixed dragging the window with enabled background media could (if it worked in the first place), drag the media window only.
+  # Issue where dragging the window does not work with enabled background media will be fixed in a later release.
+! [snippets::mpview] Fixed inconsistent Stop behavior between DirectShow (hard pause) and Media Foundation (hard stop) drivers. Adds Pause (soft pause) for both drivers.
+
+[Version 2.13.1]
+* The free release (the one without config) is no longer digitally signed as the resulting failed digital signature may invite anti-virus attention. You are still free to apply your own digital signature prior distribution.
+! Fixed issues with fallback patch processes (TryNext) [reported by Meteorx64].
+  ! Fixed existence of a fallback patch process would cause all following patch processes to fail.
+  ! Fixed failure of a patch process would cause all following patch processes to fail, even if a fallback exists.
+  ! Fixed fallback processing would not inform the UI, causing the UI to refuse ActionTypes 4 and 6.
+! Fixed the demo minimize button not working.
+
+[Version 2.13.0]
++ Added support for a named launch mutex that the client can use to detect the presence and success of Elurair.
++ Added support for fallback patch processes (ex. mirrors) [suggested by mazvi].
++ Added setting to control the way mousing/clicking sounds are played when Elurair exits immediately afterwards [suggested by Aglao].
++ Added support for circular progress indicators.
+! Fixed mousing and clicking button sounds not working when embedded.
+! [snippets::ctlspb] Fixed progress bar might not refresh correctly during value change.
+! [snippets::ctlspb] Fixed optional right-piece of the progress bar was always stuck in 100% position.
+! [snippets::w32od] Fixed skinned 'Save' checkbox not working.
+
+[Version 2.12.0]
++ Added ActionType 10 (Telemetry) to allow including a button that allows users to change their mind in regards to their initial settings.
++ Added ActionType 11 (BGM Toggle) which allows combining ActionTypes 7 and 8 in one button with visual feedback like 'Save' checkbox.
++ Added support for playing sounds when mousing and clicking buttons [suggested by Aglao].
+  + Added ActionType 12 (FGM Toggle) whose state persists as user settings.
+  + Builder: Added support for embedding and purging WAVE resources.
+* Improved ZIP processing error message to include the failure reason error code.
+! Fixed meta data downloads would not advance the progress bar.
+  # This also caused "uneventful" patch processes to end with 0% progress bar.
+! Fixed ZIP processing error would display PakFile name instead of the affected container file.
+! Fixed ZIP processing error could potentially end in undefined state.
+! Fixed file writing error during ZIP extraction would be reported as processing error instead of write error.
+
+[Version 2.11.1]
+* Updated zlib to 1.3.0.
+! [snippets::bvunzip] Fixed file data being loaded from wrong offset in case the file name or extra field length differs between central directory and local header [reported by Douglas Parker].
+
+[Version 2.11.0]
++ Added support for dumping effective configuration in developer mode.
++ Added support for regulating background media pausing when minimized or inactive [suggested by Sapito Sucio].
++ Added support for using separate hosts for WebList and patches [suggested by mazvi].
++ Added support to change the status bar text alignment (StatusTextAlign) [suggested by fTakano].
++ Added support to change the minimum username/password length (UserNameMin/PassWordMin) [suggested by ManyManaMan].
+* Various documentation adjustments.
+! Builder: Fixed TTF files were not purged [reported by <invalid reference>].
+! [snippets::w32od] Fixed memory leak when BGSKIN or CHECKSAVE skins fail to load [reported by Psy Ops].
+
+[Version 2.10.0]
++ Added support for embedded custom fonts.
+! Fixed incorrect button type changing when enabling skinning.
+! [snippets::w32res] Builder: Fixed embedded cursors would be drawn incorrectly on Win11 [reported by Sapito Sucio].
+
+[Version 2.9.0]
++ Added support for auto-clicking the default button after successful patch process to support splash-screen layouts (AutoEnter).
++ Added support for renaming files after all patch processes complete (PatchRenameList).
++ Builder: Added support for adding and purging custom mouse cursors.
+! Fixed ActionType 4 and 6 could be potentially re-entered [reported by Sapito Sucio].
+! [rsulib3] Fixed atypically-formatted empty archives would fail to open (GRF Editor).
+
+[Version 2.8.0]
++ Added support for disabling auto-start of background media [suggested by Suu].
++ Added support for custom mouse cursors [suggested by Seiren].
++ Added support for specifying display name for the save checkbox (IDC_CHECKSAVE) like for other buttons [suggested by 梦天].
++ Added ActionType 9 (Create shortcut link on desktop) [suggested by 梦天].
++ Added zh_CN localization [梦天].
++ Added support for external arguments to be passed to ActionType 4 and 6 (ExternalArgs).
++ Added support for specifying configuration keys, that cannot be overriden by the user (PolicyNoUserConfigList).
++ Builder: Added support for removing existing skin files.
++ Demo: Added sample bgmplay/bgmstop buttons.
+* Changed the "rotten" patch state message to be more user-friendly. The technical version now appears in dev-mode only.
+* Updated ar_EG localization [Ema/Hercules].
+! Fixed intermediate paths in WebList not working.
+! Fixed progress bar/button sometimes getting stuck in indeterminate state [reported by mazvi].
+
+[Version 2.7.1]
++ Added es_ES localization [csnv].
++ Added zh_TW localization [Hope22].
++ Added ActionType 7 (BGM play) and 8 (BGM stop).
+* Updated pt_BR localization [MYIK].
+* Background media is now paused when the window is minimized [suggested by Lumen].
+
+[Version 2.7.0]
++ Added ja_JP localization [Suu].
++ Added support for compiled configuration resource [suggested by AIR KING].
++ Added support for Ctrl+Backspace in Edit controls whenever supported by the OS [reported by El Sapö Sucio].
++ Added support for alternative patch list format that allows modifiers to be specified.
+  + Added support for 'stop' modifier, which stops the patch process at current line (for updating the patcher for example).
+  + Added support for 'delete' modifier, which removes specified file, removes files specified inside an extractable archive or applies patch to an archive subtractively [suggested by Suu].
+* Updated WebList setting to allow specifying an intermediate path (in addition to WebPath) [suggested by Suu].
+* Updated list of patches to allow specifying an intermediate path (in addition to WebPath) [suggested by AIR KING].
+* [snippets::dlgabout] Improved keyboard-only accessibility.
+* [snippets::dlgdiagv] Improved keyboard-only accessibility.
+! Fixed builder would update only the English window title [reported by Suu].
+! [snippets::xf_slash] Fixed ActionType 3 would crash [reported by Suu].
+
+[Version 2.6.1]
+* Updated documentation for ActionType 6.
+! Fixed regression causing main window to lock up when closing on running patch process [reported by Dastgir].
+
+[Version 2.6.0]
++ Added de_DE localization.
++ Added developer mode.
+  + Added developer error message when background media fails to load.
++ Added support for customizing the (non-embedded) skin directory.
+* Migrated UI to the engine used in RO Patcher Lite.
+  # There should be no observable visual or skin-related changes.
+* Updated zlib to 1.2.13.
+! Fixed a crash when background media fails to load.
+! [snippets::mpview] Fixed readjusting video window would fail, if the media does not contain a video stream.
+! [snippets::w32wnp] Fixed post-initialization events would fire before the window initialization has finished causing random crashes.
+
+[Version 2.5.0]
++ Added ar_EG localization [Ema/Hercules].
++ Added pt_BR localization [MYIK].
++ Added support for button hot-tracking (reacting to mousing over) [suggested by Seiren].
+! Fixed client was allowed to be started, even when the patch processes fail.
+! Fixed using the webview could cause crashes under certain configurations.
+! Fixed a dead-lock when the window was closed while a patch process was in progress [reported by MYIK][reported by Seiren].
+! [snippets::ctlspb] Fixed clip (left only) and tile center modes could be drawn with bald spots on Win8 and later [reported by Seiren].
+# There is no 2.4.0 release, because a nightly was released as 2.4.0 without being marked as such.
+
+[Version 2.3.0]
++ Added support for limiting patch progress range for 3rd party patch servers [suggested by mazvi].
++ Added support for media/video background [suggested by Maple].
+
+[Version 2.2.0]
++ Added support for self-update through elurair.new
+! Fixed ZIP handler registration would fail (since 2.1.0).
+
+[Version 2.1.0]
++ Added support for handling ZIP archives (unzip).
++ Builder: Added support for updating Elurair icon [suggested by MYIK].
++ Builder: Added support for updating Elurair window title [suggested by MYIK].
++ Added support for configuring the status bar fore- and background color [suggested by MYIK].
++ Added support for disabling ROCred (patcher only use) [suggested by MYIK].
+
+[Version 2.0.0]
++ Initial release.
+
+====================================================================

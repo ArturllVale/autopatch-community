@@ -1,0 +1,16 @@
+{
+  "serverName": "My Ragnarok Server",
+  "patchUrl": "http://patch.myserver.com/patches/",
+  "patchListUrl": "http://patch.myserver.com/patchlist.txt",
+  "versionUrl": "http://patch.myserver.com/version.json",
+  "gameExecutable": "ragexe.exe",
+  "gameArguments": "1rag1",
+  "targetGrf": "data.grf",
+  "backgroundImage": null,
+  "newsUrl": "http://patch.myserver.com/news.txt",
+  "websiteUrl": "http://www.myserver.com",
+  "supportUrl": "https://discord.gg/myserver",
+  "theme": "dark",
+  "primaryColor": "#2196F3",
+  "showNews": true
+}

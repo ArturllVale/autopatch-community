@@ -1,0 +1,131 @@
+{
+    "openapi" : "3.0.2",
+    "x-spec" : "https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.2.md",
+    "info" :
+    {
+        "title" : "Elurair API",
+        "version" : "1.0.0"
+    },
+    "paths" :
+    {
+        "/accounts" :
+        {
+            "get" :
+            {
+                "summary" : "Get all accounts",
+                "description" : "Returns all accounts available to the authenticated client",
+                "operationId" : "getAccounts",
+                "responses" :
+                {
+                    "200" :
+                    {
+                        "description" : "List of accounts",
+                        "content" :
+                        {
+                            "application/json" :
+                            {
+                                "schema" :
+                                {
+                                    "type" : "array",
+                                    "items" :
+                                    {
+                                        "type" : "object",
+                                        "properties" :
+                                        {
+                                            "userName" :
+                                            {
+                                                "type" : "string"
+                                            },
+                                            "authToken" :
+                                            {
+                                                "type" : "string"
+                                            }
+                                        },
+                                        "required" :
+                                        [
+                                            "userName",
+                                            "authToken"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default" :
+                    {
+                        "description" : "Unexpected error",
+                        "content" :
+                        {
+                            "application/json" :
+                            {
+                                "schema" :
+                                {
+                                    "type" : "object",
+                                    "properties" :
+                                    {
+                                        "errors" :
+                                        {
+                                            "type" : "array",
+                                            "items" :
+                                            {
+                                                "type" : "object",
+                                                "properties" :
+                                                {
+                                                    "code" :
+                                                    {
+                                                        "type" : "integer"
+                                                    },
+                                                    "description" :
+                                                    {
+                                                        "type" : "string"
+                                                    }
+                                                },
+                                                "required" :
+                                                [
+                                                    "code"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required" :
+                                    [
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security" :
+                [
+                    {
+                        "masterAccount" : []
+                    }
+                ]
+            }
+        }
+    },
+    "components" :
+    {
+        "securitySchemes" :
+        {
+            "apiKey" :
+            {
+                "type" : "apiKey",
+                "name" : "X-API-KEY",
+                "in" : "header"
+            },
+            "masterAccount" :
+            {
+                "type" : "http",
+                "scheme" : "digest"
+            }
+        }
+    },
+    "security" :
+    [
+        {
+            "apiKey" : []
+        }
+    ]
+}

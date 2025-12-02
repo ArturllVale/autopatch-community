@@ -1,0 +1,64 @@
+# Build outputs
+cpp/build/
+electron-builder/native/build/
+electron-builder/out/
+electron-builder/dist/
+electron-builder/.vite/
+
+# Dependencies
+electron-builder/node_modules/
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temp files
+*.tmp
+*.temp
+*.swp
+*~
+
+# Compiled binaries (keep in resources for distribution)
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+*.ilk
+*.exp
+
+# But keep resources folder executables
+!electron-builder/resources/*.exe
+
+# Package manager locks (optional - you may want to keep these)
+# package-lock.json
+# yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Test outputs
+coverage/
+.nyc_output/
+
+# Cache
+.cache/
+.eslintcache
+
+# Generated files
+*.generated.*
