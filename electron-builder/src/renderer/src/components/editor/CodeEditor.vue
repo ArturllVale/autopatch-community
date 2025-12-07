@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProjectStore } from '../../stores/project'
 
+const { t } = useI18n()
 const projectStore = useProjectStore()
 
 // Current active code tab
@@ -600,7 +602,7 @@ window.onPatcherError = function(message) {
           </div>
 
           <div class="size-controls">
-            <span>Tamanho:</span>
+            <span>{{ t('codeEditor.size') }}:</span>
             <input type="number" v-model="windowWidth" min="400" max="1920" />
             <span>x</span>
             <input type="number" v-model="windowHeight" min="300" max="1080" />
@@ -609,11 +611,11 @@ window.onPatcherError = function(message) {
           <div class="template-buttons">
             <button class="template-btn" @click="loadBasicTemplate">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>
-              Template Básico
+              {{ t('codeEditor.basicTemplate') }}
             </button>
             <button class="template-btn" @click="loadAdvancedTemplate">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>
-              Template Avançado
+              {{ t('codeEditor.advancedTemplate') }}
             </button>
           </div>
         </div>
@@ -635,8 +637,8 @@ window.onPatcherError = function(message) {
       <!-- Right side - Preview -->
       <div class="preview-panel">
         <div class="preview-header">
-          <span>Pré-visualização</span>
-          <button class="refresh-btn" @click="refreshPreview" title="Atualizar preview">
+          <span>{{ t('codeEditor.preview') }}</span>
+          <button class="refresh-btn" @click="refreshPreview" :title="t('codeEditor.refreshPreview')">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
           </button>
         </div>

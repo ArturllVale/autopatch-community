@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProjectStore } from '../../stores/project'
 import { useUiStore } from '../../stores/ui'
 
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUiStore()
 
@@ -97,14 +99,14 @@ function saveSettings() {
       }
     }
   })
-  uiStore.setStatus('Configurações salvas')
+  uiStore.setStatus(t('status.settingsSaved'))
 }
 
 async function selectClientExe() {
   try {
     const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
-      title: 'Selecionar Executável do Cliente',
-      filters: [{ name: 'Executáveis', extensions: ['exe'] }]
+      title: t('settings.selectClientExe'),
+      filters: [{ name: t('settings.executables'), extensions: ['exe'] }]
     })
     if (result) {
       clientExe.value = result.split(/[/\\]/).pop() || result
@@ -117,8 +119,8 @@ async function selectClientExe() {
 async function selectIconFile() {
   try {
     const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
-      title: 'Selecionar Ícone do Patcher',
-      filters: [{ name: 'Ícones', extensions: ['ico'] }]
+      title: t('settings.selectIcon'),
+      filters: [{ name: t('settings.icons'), extensions: ['ico'] }]
     })
     if (result) {
       iconPath.value = result
@@ -131,8 +133,8 @@ async function selectIconFile() {
 async function selectVideoFile() {
   try {
     const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
-      title: 'Selecionar Vídeo de Fundo',
-      filters: [{ name: 'Vídeos', extensions: ['mp4', 'wmv', 'avi', 'webm'] }]
+      title: t('settings.selectVideo'),
+      filters: [{ name: t('settings.videos'), extensions: ['mp4', 'wmv', 'avi', 'webm'] }]
     })
     if (result) {
       videoPath.value = result
@@ -160,8 +162,8 @@ async function handleExport() {
     // Apenas pedir o caminho de saída do EXE
     console.log('[EXPORT] Opening save dialog...')
     const outputPath = await window.electron.ipcRenderer.invoke('dialog:save-file', {
-      title: 'Salvar Patcher Como',
-      filters: [{ name: 'Executáveis', extensions: ['exe'] }],
+      title: t('settings.savePatcherAs'),
+      filters: [{ name: t('settings.executables'), extensions: ['exe'] }],
       defaultPath: `${serverName.value.replace(/\s+/g, '_')}_Patcher.exe`
     })
 
@@ -172,7 +174,7 @@ async function handleExport() {
     }
 
     uiStore.startBuild()
-    uiStore.setStatus('Preparando imagens...')
+    uiStore.setStatus(t('status.preparingImages'))
 
     // Preparar configuração completa para o patcher
     // Use JSON.parse/stringify to create a plain object (remove Vue reactivity)
@@ -222,7 +224,7 @@ async function handleExport() {
     
     console.log('[EXPORT] Config prepared:', JSON.stringify(patcherConfig).substring(0, 200))
 
-    uiStore.setStatus('Gerando patcher...')
+    uiStore.setStatus(t('status.generatingPatcher'))
 
     // Get background and icon paths as plain strings
     const bgPath = projectStore.project.config.backgroundImagePath || ''
@@ -239,20 +241,20 @@ async function handleExport() {
     console.log('[EXPORT] Result:', result)
 
     if (result.success) {
-      uiStore.setStatus(`Patcher gerado com sucesso: ${outputPath}`)
+      uiStore.setStatus(t('status.patcherSuccess', { path: outputPath }))
       // Mostrar mensagem de sucesso
       await window.electron.ipcRenderer.invoke('dialog:show-message', {
         type: 'info',
-        title: 'Sucesso',
-        message: 'Patcher gerado com sucesso!',
+        title: t('common.success'),
+        message: t('generate.success'),
         detail: outputPath
       })
     } else {
-      uiStore.setStatus(`Erro: ${result.error}`)
+      uiStore.setStatus(t('status.error', { message: result.error }))
       await window.electron.ipcRenderer.invoke('dialog:show-message', {
         type: 'error',
-        title: 'Erro',
-        message: 'Falha ao gerar o patcher',
+        title: t('common.error'),
+        message: t('generate.error'),
         detail: result.error
       })
     }
@@ -267,100 +269,100 @@ async function handleExport() {
 <template>
   <div class="settings-panel">
     <div class="settings-content">
-      <h2>Configurações do Projeto</h2>
+      <h2>{{ t('settings.projectSettings') }}</h2>
 
       <!-- Server Settings -->
       <div class="settings-section">
-        <h3>Servidor</h3>
+        <h3>{{ t('settings.server') }}</h3>
         <div class="form-group">
-          <label>Nome do Servidor</label>
-          <input type="text" v-model="serverName" placeholder="Meu Servidor RO" />
+          <label>{{ t('settings.serverName') }}</label>
+          <input type="text" v-model="serverName" :placeholder="t('settings.serverNamePlaceholder')" />
         </div>
         <div class="form-group">
-          <label>URL da Patchlist</label>
-          <input type="url" v-model="patchListUrl" placeholder="http://exemplo.com/patchlist.txt" />
+          <label>{{ t('settings.patchlistUrl') }}</label>
+          <input type="url" v-model="patchListUrl" :placeholder="t('settings.patchlistUrlPlaceholder')" />
         </div>
         <div class="form-group">
-          <label>URL de Notícias (opcional)</label>
-          <input type="url" v-model="newsUrl" placeholder="http://exemplo.com/news.html" />
+          <label>{{ t('settings.newsUrl') }}</label>
+          <input type="url" v-model="newsUrl" :placeholder="t('settings.newsUrlPlaceholder')" />
         </div>
       </div>
 
       <!-- Client Settings -->
       <div class="settings-section">
-        <h3>Cliente</h3>
+        <h3>{{ t('settings.client') }}</h3>
         <div class="form-group">
-          <label>Executável do Cliente</label>
+          <label>{{ t('settings.clientExe') }}</label>
           <div class="input-with-button">
-            <input type="text" v-model="clientExe" placeholder="ragexe.exe" />
-            <button @click="selectClientExe">Procurar</button>
+            <input type="text" v-model="clientExe" :placeholder="t('settings.clientExePlaceholder')" />
+            <button @click="selectClientExe">{{ t('common.browse') }}</button>
           </div>
         </div>
         <div class="form-group">
-          <label>Argumentos (opcional)</label>
-          <input type="text" v-model="clientArgs" placeholder="1sak1" />
+          <label>{{ t('settings.clientArgs') }}</label>
+          <input type="text" v-model="clientArgs" :placeholder="t('settings.clientArgsPlaceholder')" />
         </div>
         <div class="form-group">
-          <label>Arquivos GRF (um por linha)</label>
-          <textarea v-model="grfFiles" rows="4" placeholder="data.grf&#10;rdata.grf"></textarea>
+          <label>{{ t('settings.grfFiles') }}</label>
+          <textarea v-model="grfFiles" rows="4" :placeholder="t('settings.grfFilesPlaceholder')"></textarea>
         </div>
       </div>
 
       <!-- Window Settings -->
       <div class="settings-section">
-        <h3>Janela</h3>
+        <h3>{{ t('settings.window') }}</h3>
         <div class="form-row">
           <div class="form-group">
-            <label>Largura</label>
+            <label>{{ t('settings.width') }}</label>
             <input type="number" v-model.number="windowWidth" min="400" max="1920" />
           </div>
           <div class="form-group">
-            <label>Altura</label>
+            <label>{{ t('settings.height') }}</label>
             <input type="number" v-model.number="windowHeight" min="300" max="1080" />
           </div>
         </div>
         <div class="form-group">
-          <label>Ícone do Patcher (.ico)</label>
+          <label>{{ t('settings.patcherIcon') }}</label>
           <div class="input-with-button">
-            <input type="text" v-model="iconPath" placeholder="Nenhum ícone selecionado" readonly />
-            <button @click="selectIconFile">Procurar</button>
+            <input type="text" v-model="iconPath" :placeholder="t('settings.noIconSelected')" readonly />
+            <button @click="selectIconFile">{{ t('common.browse') }}</button>
           </div>
-          <small class="help-text">Deixe vazio para usar o ícone padrão</small>
+          <small class="help-text">{{ t('settings.useDefaultIcon') }}</small>
         </div>
       </div>
 
       <!-- Video Background -->
       <div class="settings-section">
-        <h3>🎬 Vídeo de Fundo</h3>
+        <h3>🎬 {{ t('settings.videoBackground') }}</h3>
         <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" v-model="videoEnabled" />
-            <span>Habilitar vídeo de fundo</span>
+            <span>{{ t('settings.enableVideo') }}</span>
           </label>
-          <small class="help-text">O vídeo será exibido atrás de todos os elementos. A imagem de fundo será usada como fallback.</small>
+          <small class="help-text">{{ t('settings.videoHelp') }}</small>
         </div>
         
         <template v-if="videoEnabled">
           <div class="form-group">
-            <label>Arquivo de Vídeo</label>
+            <label>{{ t('settings.videoFile') }}</label>
             <div class="input-with-button">
-              <input type="text" v-model="videoPath" placeholder="Nenhum vídeo selecionado" readonly />
-              <button @click="selectVideoFile">Procurar</button>
+              <input type="text" v-model="videoPath" :placeholder="t('settings.noVideoSelected')" readonly />
+              <button @click="selectVideoFile">{{ t('common.browse') }}</button>
             </div>
-            <small class="help-text">Formatos suportados: MP4, WMV, AVI. O vídeo será copiado junto com o patcher.</small>
+            <small class="help-text">{{ t('settings.videoFormats') }}</small>
           </div>
           
           <div class="form-row">
             <div class="form-group">
               <label class="checkbox-label">
                 <input type="checkbox" v-model="videoLoop" />
-                <span>Repetir vídeo</span>
+                <span>{{ t('settings.videoLoop') }}</span>
               </label>
             </div>
             <div class="form-group">
               <label class="checkbox-label">
                 <input type="checkbox" v-model="videoAutoplay" />
-                <span>Iniciar automaticamente</span>
+                <span>{{ t('settings.videoAutoplay') }}</span>
               </label>
             </div>
           </div>
@@ -369,46 +371,46 @@ async function handleExport() {
             <div class="form-group">
               <label class="checkbox-label">
                 <input type="checkbox" v-model="videoMuted" />
-                <span>Sem som</span>
+                <span>{{ t('settings.videoMuted') }}</span>
               </label>
             </div>
             <div class="form-group">
               <label class="checkbox-label">
                 <input type="checkbox" v-model="videoShowControls" />
-                <span>Mostrar botão Play/Pause</span>
+                <span>{{ t('settings.videoShowControls') }}</span>
               </label>
             </div>
           </div>
           
           <!-- Control Button Style -->
           <template v-if="videoShowControls">
-            <h4 class="subsection-title">Estilo do Botão de Controle</h4>
+            <h4 class="subsection-title">{{ t('settings.controlButtonStyle') }}</h4>
             
             <div class="form-row">
               <div class="form-group">
-                <label>Posição X</label>
+                <label>{{ t('settings.positionX') }}</label>
                 <input type="number" v-model.number="videoBtnX" min="0" />
               </div>
               <div class="form-group">
-                <label>Posição Y</label>
+                <label>{{ t('settings.positionY') }}</label>
                 <input type="number" v-model.number="videoBtnY" min="0" />
               </div>
               <div class="form-group">
-                <label>Tamanho</label>
+                <label>{{ t('settings.size') }}</label>
                 <input type="number" v-model.number="videoBtnSize" min="20" max="200" />
               </div>
             </div>
             
             <div class="form-row">
               <div class="form-group">
-                <label>Cor de Fundo</label>
+                <label>{{ t('settings.backgroundColor') }}</label>
                 <div class="color-input">
                   <input type="color" v-model="videoBtnBgColor" />
                   <input type="text" v-model="videoBtnBgColor" />
                 </div>
               </div>
               <div class="form-group">
-                <label>Cor do Ícone</label>
+                <label>{{ t('settings.iconColor') }}</label>
                 <div class="color-input">
                   <input type="color" v-model="videoBtnIconColor" />
                   <input type="text" v-model="videoBtnIconColor" />
@@ -418,18 +420,18 @@ async function handleExport() {
             
             <div class="form-row">
               <div class="form-group">
-                <label>Cor da Borda</label>
+                <label>{{ t('settings.borderColor') }}</label>
                 <div class="color-input">
                   <input type="color" v-model="videoBtnBorderColor" />
                   <input type="text" v-model="videoBtnBorderColor" />
                 </div>
               </div>
               <div class="form-group">
-                <label>Largura da Borda</label>
+                <label>{{ t('settings.borderWidth') }}</label>
                 <input type="number" v-model.number="videoBtnBorderWidth" min="0" max="10" />
               </div>
               <div class="form-group">
-                <label>Opacidade (%)</label>
+                <label>{{ t('settings.opacityPercent') }}</label>
                 <input type="number" v-model.number="videoBtnOpacity" min="0" max="100" />
               </div>
             </div>
@@ -440,11 +442,11 @@ async function handleExport() {
       <!-- Actions -->
       <div class="settings-actions">
         <button class="btn-secondary" @click="saveSettings">
-          Salvar Configurações
+          {{ t('settings.saveSettings') }}
         </button>
         <button class="btn-primary" @click="handleExport" :disabled="uiStore.isBuilding">
-          <span v-if="uiStore.isBuilding">Gerando...</span>
-          <span v-else>Exportar Patcher (.exe)</span>
+          <span v-if="uiStore.isBuilding">{{ t('settings.generating') }}</span>
+          <span v-else>{{ t('settings.exportPatcher') }}</span>
         </button>
       </div>
     </div>

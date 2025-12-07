@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProjectStore } from '../../stores/project'
 import { useUiStore } from '../../stores/ui'
 
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUiStore()
 
@@ -69,13 +71,13 @@ function getElementName(element: any) {
 <template>
   <div class="layers-panel" v-if="uiStore.isLayersPanelOpen">
     <div class="panel-header">
-      <h3>📚 Camadas</h3>
+      <h3>📚 {{ t('layers.title') }}</h3>
       <button class="close-btn" @click="uiStore.toggleLayersPanel">✕</button>
     </div>
     
     <div class="layers-list">
       <div class="layer-info">
-        <small>Arraste para reordenar ou use os controles</small>
+        <small>{{ t('layers.dragInfo') }}</small>
       </div>
       
       <div
@@ -96,36 +98,36 @@ function getElementName(element: any) {
           <button 
             class="layer-btn" 
             @click.stop="toggleVisibility(element.id)"
-            :title="element.visible === false ? 'Mostrar' : 'Ocultar'"
+            :title="element.visible === false ? t('layers.show') : t('layers.hide')"
           >
             {{ element.visible === false ? '👁️‍🗨️' : '👁️' }}
           </button>
           <button 
             class="layer-btn" 
             @click.stop="toggleLock(element.id)"
-            :title="element.locked ? 'Destravar' : 'Travar'"
+            :title="element.locked ? t('layers.unlock') : t('layers.lock')"
           >
             {{ element.locked ? '🔒' : '🔓' }}
           </button>
-          <button class="layer-btn" @click.stop="moveUp(element.id)" title="Subir">▲</button>
-          <button class="layer-btn" @click.stop="moveDown(element.id)" title="Descer">▼</button>
-          <button class="layer-btn danger" @click.stop="deleteElement(element.id)" title="Excluir">🗑️</button>
+          <button class="layer-btn" @click.stop="moveUp(element.id)" :title="t('layers.moveUp')">▲</button>
+          <button class="layer-btn" @click.stop="moveDown(element.id)" :title="t('layers.moveDown')">▼</button>
+          <button class="layer-btn danger" @click.stop="deleteElement(element.id)" :title="t('layers.delete')">🗑️</button>
         </div>
       </div>
       
       <div v-if="sortedElements.length === 0" class="empty-layers">
-        <p>Nenhum elemento adicionado</p>
-        <small>Use a barra de ferramentas para adicionar elementos</small>
+        <p>{{ t('layers.noElements') }}</p>
+        <small>{{ t('layers.useToolbar') }}</small>
       </div>
     </div>
     
     <!-- Quick actions -->
     <div class="layers-footer" v-if="projectStore.selectedElementId">
       <button @click="bringToFront(projectStore.selectedElementId!)" class="footer-btn">
-        ⬆️ Frente
+        ⬆️ {{ t('layers.toFront') }}
       </button>
       <button @click="sendToBack(projectStore.selectedElementId!)" class="footer-btn">
-        ⬇️ Trás
+        ⬇️ {{ t('layers.toBack') }}
       </button>
     </div>
   </div>

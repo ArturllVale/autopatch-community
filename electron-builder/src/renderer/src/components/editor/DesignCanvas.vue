@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProjectStore } from '../../stores/project'
 import { useUiStore } from '../../stores/ui'
 import Toolbar from '../layout/Toolbar.vue'
 import type { UIElement } from '../../types'
 
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUiStore()
 
@@ -550,7 +552,7 @@ function handleSizePreset(event: Event) {
   if (value) {
     const [width, height] = value.split('x').map(Number)
     projectStore.setWindowSize(width, height)
-    uiStore.setStatus(`Tamanho alterado para ${width}×${height}`)
+    uiStore.setStatus(t('status.sizeChanged', { width, height }))
   }
   // Reset select
   (event.target as HTMLSelectElement).value = ''
@@ -576,11 +578,11 @@ onUnmounted(() => {
 
     <!-- Tabs and Size Controls -->
     <div class="canvas-tabs">
-      <span class="tab-title">🎨 Editor de Design</span>
+      <span class="tab-title">🎨 {{ t('canvas.designEditor') }}</span>
       
       <!-- Patcher Size Controls -->
       <div class="size-controls">
-        <span class="size-label">Tamanho:</span>
+        <span class="size-label">{{ t('canvas.windowSize') }}:</span>
         <input 
           type="number" 
           class="size-input"
@@ -588,7 +590,7 @@ onUnmounted(() => {
           @input="projectStore.setWindowSize(Number(($event.target as HTMLInputElement).value), projectStore.project.config.windowHeight)"
           min="400" 
           max="1920"
-          title="Largura"
+          :title="t('settings.width')"
         />
         <span class="size-x">×</span>
         <input 
@@ -598,13 +600,13 @@ onUnmounted(() => {
           @input="projectStore.setWindowSize(projectStore.project.config.windowWidth, Number(($event.target as HTMLInputElement).value))"
           min="300" 
           max="1080"
-          title="Altura"
+          :title="t('settings.height')"
         />
         <span class="size-unit">px</span>
         
         <!-- Preset sizes -->
-        <select class="size-preset" @change="handleSizePreset($event)" title="Tamanhos predefinidos">
-          <option value="">Presets</option>
+        <select class="size-preset" @change="handleSizePreset($event)" :title="t('canvas.presets')">
+          <option value="">{{ t('canvas.presets') }}</option>
           <option value="800x600">800×600</option>
           <option value="1024x768">1024×768</option>
           <option value="640x480">640×480</option>
@@ -613,7 +615,7 @@ onUnmounted(() => {
         
         <!-- Border Radius Control -->
         <span class="size-separator">|</span>
-        <span class="size-label">Borda:</span>
+        <span class="size-label">{{ t('canvas.borderRadius') }}:</span>
         <input 
           type="number" 
           class="size-input radius-input"
@@ -621,7 +623,7 @@ onUnmounted(() => {
           @input="projectStore.setWindowBorderRadius(Number(($event.target as HTMLInputElement).value))"
           min="0" 
           max="200"
-          title="Arredondamento das bordas (0 = sem arredondamento)"
+          :title="t('properties.borderRadius')"
         />
         <span class="size-unit">px</span>
       </div>
@@ -631,9 +633,9 @@ onUnmounted(() => {
         v-if="projectStore.selectedElementId"
         class="delete-btn"
         @click="deleteSelectedElement"
-        title="Deletar elemento (Delete)"
+        :title="t('common.delete')"
       >
-        🗑️ Deletar
+        🗑️ {{ t('common.delete') }}
       </button>
     </div>
 
@@ -686,7 +688,7 @@ onUnmounted(() => {
                 backgroundColor: projectStore.project.config.progressBar.fillColor
               }"
             ></div>
-            <span class="progress-label">📊 Barra de Progresso</span>
+            <span class="progress-label">📊 {{ t('elements.progressBar') }}</span>
             
             <!-- Resize handles for progress bar (only when selected) -->
             <template v-if="uiStore.isProgressBarSelected">
@@ -711,7 +713,7 @@ onUnmounted(() => {
               <rect x="6" y="5" width="4" height="14" />
               <rect x="14" y="5" width="4" height="14" />
             </svg>
-            <span class="video-btn-label">▶️ Play/Pause</span>
+            <span class="video-btn-label">▶️ {{ t('canvas.videoBtn') }}</span>
           </div>
         </div>
       </div>

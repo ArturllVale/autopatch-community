@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useProjectStore } from '../../stores/project'
 import { useUiStore } from '../../stores/ui'
+import LanguageSelector from '../common/LanguageSelector.vue'
 
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUiStore()
 
@@ -19,17 +22,17 @@ function selectImageMode() {
 async function handleOpenProject() {
   try {
     const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
-      title: 'Abrir Projeto',
-      filters: [{ name: 'Projeto AutoPatch', extensions: ['approject', 'json'] }]
+      title: t('sidebar.openProject'),
+      filters: [{ name: t('sidebar.projectFilter'), extensions: ['approject', 'json'] }]
     })
     if (result) {
       const content = await window.electron.ipcRenderer.invoke('file:read', result)
       projectStore.fromJSON(content)
       projectStore.setProjectPath(result)
-      uiStore.setStatus(`Projeto carregado: ${result}`)
+      uiStore.setStatus(t('status.projectLoaded', { path: result }))
     }
   } catch (e) {
-    uiStore.setStatus('Erro ao abrir projeto')
+    uiStore.setStatus(t('status.projectLoadError'))
     console.error(e)
   }
 }
@@ -39,8 +42,8 @@ async function handleSaveProject() {
     let path = projectStore.project.path
     if (!path) {
       path = await window.electron.ipcRenderer.invoke('dialog:save-file', {
-        title: 'Salvar Projeto',
-        filters: [{ name: 'Projeto AutoPatch', extensions: ['approject'] }],
+        title: t('sidebar.saveProject'),
+        filters: [{ name: t('sidebar.projectFilter'), extensions: ['approject'] }],
         defaultPath: 'meu-patcher.approject'
       })
     }
@@ -51,10 +54,10 @@ async function handleSaveProject() {
       })
       projectStore.setProjectPath(path)
       projectStore.markSaved()
-      uiStore.setStatus(`Projeto salvo: ${path}`)
+      uiStore.setStatus(t('status.projectSaved', { path }))
     }
   } catch (e) {
-    uiStore.setStatus('Erro ao salvar projeto')
+    uiStore.setStatus(t('status.projectSaveError'))
     console.error(e)
   }
 }
@@ -65,24 +68,24 @@ async function handleSaveProject() {
     <!-- Logo/Title -->
     <div class="sidebar-header">
       <h1 class="logo-text">AutoPatch Builder</h1>
-      <p class="logo-subtitle">Crie seu patcher personalizado para Ragnarok Online</p>
+      <p class="logo-subtitle">{{ t('sidebar.subtitle') }}</p>
     </div>
 
     <!-- Project Actions -->
     <div class="sidebar-actions">
       <button class="action-btn" @click="handleOpenProject">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg>
-        Abrir Projeto
+        {{ t('sidebar.openProject') }}
       </button>
       <button class="action-btn" @click="handleSaveProject">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM6 6h9v4H6z"/></svg>
-        Salvar Projeto
+        {{ t('sidebar.saveProject') }}
       </button>
     </div>
 
     <!-- Interface Type Selection -->
     <div class="sidebar-section">
-      <div class="section-title">TIPO DE INTERFACE</div>
+      <div class="section-title">{{ t('sidebar.interfaceType') }}</div>
       
       <!-- Image Mode -->
       <div 
@@ -94,8 +97,8 @@ async function handleSaveProject() {
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
         </div>
         <div class="mode-info">
-          <div class="mode-title">Modo Imagem</div>
-          <div class="mode-desc">Background + botões personalizados com posições definidas</div>
+          <div class="mode-title">{{ t('sidebar.imageMode') }}</div>
+          <div class="mode-desc">{{ t('sidebar.imageModeDesc') }}</div>
         </div>
       </div>
 
@@ -119,30 +122,30 @@ async function handleSaveProject() {
 
     <!-- Server Config Section -->
     <div class="sidebar-section">
-      <div class="section-title">SERVIDOR</div>
+      <div class="section-title">{{ t('sidebar.server') }}</div>
       
       <div class="config-field">
-        <label>Nome do Servidor:</label>
+        <label>{{ t('sidebar.serverName') }}:</label>
         <input 
           type="text" 
           :value="projectStore.project.config.serverName"
           @input="projectStore.updateConfig({ serverName: ($event.target as HTMLInputElement).value })"
-          placeholder="Meu Servidor RO"
+          :placeholder="t('sidebar.serverNamePlaceholder')"
         />
       </div>
       
       <div class="config-field">
-        <label>URL da Patchlist:</label>
+        <label>{{ t('sidebar.patchlistUrl') }}:</label>
         <input 
           type="text" 
           :value="projectStore.project.config.patchListUrl"
           @input="projectStore.updateConfig({ patchListUrl: ($event.target as HTMLInputElement).value })"
-          placeholder="https://seuservidor.com/patchlist.txt"
+          placeholder="https://yourserver.com/patchlist.txt"
         />
       </div>
 
       <div class="config-field">
-        <label>Arquivo Patchlist:</label>
+        <label>{{ t('sidebar.patchlistFile') }}:</label>
         <input 
           type="text" 
           value="patchlist.txt"
@@ -152,7 +155,7 @@ async function handleSaveProject() {
       </div>
 
       <div class="config-field">
-        <label>Pasta de Patches:</label>
+        <label>{{ t('sidebar.patchesFolder') }}:</label>
         <input 
           type="text" 
           value="patches/"
@@ -164,10 +167,10 @@ async function handleSaveProject() {
 
     <!-- Game Config Section -->
     <div class="sidebar-section">
-      <div class="section-title">CONFIGURAÇÕES DO JOGO</div>
+      <div class="section-title">{{ t('sidebar.gameConfig') }}</div>
       
       <div class="config-field">
-        <label>GRF Principal:</label>
+        <label>{{ t('sidebar.mainGrf') }}:</label>
         <input 
           type="text" 
           :value="projectStore.project.config.grfFiles[0] || 'data.grf'"
@@ -177,7 +180,7 @@ async function handleSaveProject() {
       </div>
 
       <div class="config-field">
-        <label>Executável do Jogo:</label>
+        <label>{{ t('sidebar.gameExe') }}:</label>
         <input 
           type="text" 
           :value="projectStore.project.config.clientExe"
@@ -188,8 +191,13 @@ async function handleSaveProject() {
 
       <div class="config-checkbox">
         <input type="checkbox" id="closeOnStart" checked />
-        <label for="closeOnStart">Fechar patcher ao iniciar o jogo</label>
+        <label for="closeOnStart">{{ t('sidebar.closeOnStart') }}</label>
       </div>
+    </div>
+
+    <!-- Language Selector Footer -->
+    <div class="sidebar-footer">
+      <LanguageSelector />
     </div>
   </div>
 </template>
@@ -379,5 +387,11 @@ async function handleSaveProject() {
 .config-checkbox label {
   font-size: 12px;
   color: #cccccc;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px 16px;
+  border-top: 1px solid #3e3e42;
 }
 </style>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useProjectStore } from '../../stores/project'
 import { useUiStore } from '../../stores/ui'
 
+const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUiStore()
 
@@ -19,29 +21,29 @@ const sortedElements = computed(() => {
   return [...projectStore.project.config.elements].sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0))
 })
 
-// Actions for buttons
-const buttonActions = [
-  { value: 'start_game', label: 'Iniciar Jogo' },
-  { value: 'check_files', label: 'Verificar Arquivos' },
-  { value: 'settings', label: 'Configurações' },
-  { value: 'website', label: 'Abrir Site' },
-  { value: 'close', label: 'Fechar' },
-  { value: 'exit', label: 'Sair' },
-  { value: 'minimize', label: 'Minimizar' }
-]
+// Actions for buttons - computed to be reactive to locale changes
+const buttonActions = computed(() => [
+  { value: 'start_game', label: t('properties.actions.startGame') },
+  { value: 'check_files', label: t('properties.actions.checkFiles') },
+  { value: 'settings', label: t('properties.actions.settings') },
+  { value: 'website', label: t('properties.actions.website') },
+  { value: 'close', label: t('properties.actions.close') },
+  { value: 'exit', label: t('properties.actions.exit') },
+  { value: 'minimize', label: t('properties.actions.minimize') }
+])
 
-// Text alignment options
-const textAlignOptions = [
-  { value: 'left', label: '◀ Esquerda' },
-  { value: 'center', label: '⬛ Centro' },
-  { value: 'right', label: '▶ Direita' }
-]
+// Text alignment options - computed to be reactive
+const textAlignOptions = computed(() => [
+  { value: 'left', label: '◀ ' + t('properties.align.left') },
+  { value: 'center', label: '⬛ ' + t('properties.align.center') },
+  { value: 'right', label: '▶ ' + t('properties.align.right') }
+])
 
-const verticalAlignOptions = [
-  { value: 'top', label: '▲ Topo' },
-  { value: 'middle', label: '⬛ Meio' },
-  { value: 'bottom', label: '▼ Base' }
-]
+const verticalAlignOptions = computed(() => [
+  { value: 'top', label: '▲ ' + t('properties.align.top') },
+  { value: 'middle', label: '⬛ ' + t('properties.align.middle') },
+  { value: 'bottom', label: '▼ ' + t('properties.align.bottom') }
+])
 
 function updateProperty(key: string, value: any) {
   if (element.value) {
@@ -137,9 +139,9 @@ const videoBtnConfig = computed(() => {
 function updateVideoConfig(key: string, value: any) {
   const current = projectStore.project.config.videoBackground || {
     enabled: false,
-    videoPath: '',
+    path: '',
     showControls: true,
-    autoPlay: true,
+    autoplay: true,
     loop: true,
     muted: true,
     controlButton: videoBtnConfig.value
@@ -152,9 +154,9 @@ function updateVideoConfig(key: string, value: any) {
 function updateVideoButtonConfig(key: string, value: any) {
   const currentVideo = videoConfig.value || {
     enabled: false,
-    videoPath: '',
+    path: '',
     showControls: true,
-    autoPlay: true,
+    autoplay: true,
     loop: true,
     muted: true,
     controlButton: videoBtnConfig.value
@@ -173,8 +175,8 @@ function updateVideoButtonConfig(key: string, value: any) {
 async function selectVideoFile() {
   try {
     const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
-      title: 'Selecionar Vídeo',
-      filters: [{ name: 'Vídeos', extensions: ['mp4', 'webm', 'avi', 'wmv'] }]
+      title: t('properties.selectVideo'),
+      filters: [{ name: t('properties.videos'), extensions: ['mp4', 'webm', 'avi', 'wmv'] }]
     })
     if (result) {
       updateVideoConfig('path', result)
@@ -237,8 +239,8 @@ function getLayerElementName(el: any) {
 async function selectStateImage(state: string) {
   try {
     const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
-      title: `Selecionar Imagem - Estado ${state}`,
-      filters: [{ name: 'Imagens', extensions: ['png', 'jpg', 'jpeg', 'bmp'] }]
+      title: t('properties.selectImageState', { state }),
+      filters: [{ name: t('properties.images'), extensions: ['png', 'jpg', 'jpeg', 'bmp'] }]
     })
     if (result) {
       updateStateProperty(state, 'imagePath', result)
@@ -251,8 +253,8 @@ async function selectStateImage(state: string) {
 async function selectBackgroundImage() {
   try {
     const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
-      title: 'Selecionar Imagem de Fundo',
-      filters: [{ name: 'Imagens', extensions: ['png', 'jpg', 'jpeg', 'bmp'] }]
+      title: t('properties.selectBackgroundImage'),
+      filters: [{ name: t('properties.images'), extensions: ['png', 'jpg', 'jpeg', 'bmp'] }]
     })
     if (result) {
       updateProperty('backgroundImage', result)
@@ -287,7 +289,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
 <template>
   <div class="property-panel">
     <div class="panel-header">
-      <h3>Propriedades</h3>
+      <h3>{{ t('properties.title') }}</h3>
     </div>
 
     <div class="panel-content">
@@ -298,7 +300,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
             <path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm12 4c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3zm-9 8c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1H6v-1z"/>
           </svg>
         </div>
-        <p>Selecione um elemento para editar</p>
+        <p>{{ t('properties.selectToEdit') }}</p>
       </div>
 
       <!-- Element properties -->
@@ -311,7 +313,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               type="text"
               :value="element.name || ''"
               @input="updateProperty('name', ($event.target as HTMLInputElement).value)"
-              placeholder="Nome do elemento"
+              :placeholder="t('properties.elementName')"
               class="element-name"
             />
           </div>
@@ -319,7 +321,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
         <!-- Position & Size -->
         <div class="property-section">
-          <div class="section-title">📐 Posição & Tamanho</div>
+          <div class="section-title">📐 {{ t('properties.positionSize') }}</div>
           <div class="property-grid-4">
             <label>
               <span>X</span>
@@ -384,19 +386,19 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
         <!-- Text (not for box/image) -->
         <div v-if="element.type !== 'box' && element.type !== 'image'" class="property-section">
-          <div class="section-title">📝 Texto</div>
+          <div class="section-title">📝 {{ t('properties.text') }}</div>
           <input
             type="text"
             :value="element.text"
             @input="updateProperty('text', ($event.target as HTMLInputElement).value)"
             class="full-width"
-            placeholder="Texto do elemento"
+            :placeholder="t('properties.elementText')"
           />
           
           <!-- Font settings -->
           <div class="property-row mt-8">
             <label class="flex-2">
-              <span>Fonte</span>
+              <span>{{ t('properties.font') }}</span>
               <input
                 type="text"
                 :value="element.fontName || 'Segoe UI'"
@@ -404,7 +406,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label class="flex-1">
-              <span>Tamanho</span>
+              <span>{{ t('properties.size') }}</span>
               <input
                 type="number"
                 :value="element.fontSize || 12"
@@ -430,10 +432,10 @@ function getGlowValue(key: string, defaultValue: any = '') {
                 :checked="element.fontItalic === true"
                 @change="updateProperty('fontItalic', ($event.target as HTMLInputElement).checked)"
               />
-              <span><i>Itálico</i></span>
+              <span><i>{{ t('properties.italic') }}</i></span>
             </label>
             <label>
-              <span>Cor</span>
+              <span>{{ t('properties.color') }}</span>
               <input
                 type="color"
                 :value="element.fontColor || '#ffffff'"
@@ -445,7 +447,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
           <!-- Text alignment -->
           <div class="property-row">
             <label>
-              <span>Alinhamento H</span>
+              <span>{{ t('properties.alignH') }}</span>
               <select
                 :value="element.textAlign || 'center'"
                 @change="updateProperty('textAlign', ($event.target as HTMLSelectElement).value)"
@@ -456,7 +458,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               </select>
             </label>
             <label>
-              <span>Alinhamento V</span>
+              <span>{{ t('properties.alignV') }}</span>
               <select
                 :value="element.textVerticalAlign || 'middle'"
                 @change="updateProperty('textVerticalAlign', ($event.target as HTMLSelectElement).value)"
@@ -471,7 +473,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
         <!-- Action (for buttons only) -->
         <div v-if="element.type === 'button'" class="property-section">
-          <div class="section-title">⚡ Ação</div>
+          <div class="section-title">⚡ {{ t('properties.action') }}</div>
           <select
             :value="element.action || 'start_game'"
             @change="updateProperty('action', ($event.target as HTMLSelectElement).value)"
@@ -485,7 +487,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
         <!-- Button States (for buttons only) -->
         <div v-if="element.type === 'button'" class="property-section">
-          <div class="section-title">🎨 Estados do Botão</div>
+          <div class="section-title">🎨 {{ t('properties.buttonStates') }}</div>
           
           <div class="state-tabs">
             <button 
@@ -494,9 +496,9 @@ function getGlowValue(key: string, defaultValue: any = '') {
               :class="['state-tab', { active: activeStateTab === state }]"
               @click="activeStateTab = state as any"
             >
-              {{ state === 'normal' ? '🔵 Normal' : 
-                 state === 'hover' ? '🟡 Hover' : 
-                 state === 'pressed' ? '🟠 Press' : '⚫ Disabled' }}
+              {{ state === 'normal' ? t('properties.stateNormalEmoji') : 
+                 state === 'hover' ? t('properties.stateHoverEmoji') : 
+                 state === 'pressed' ? t('properties.statePressedEmoji') : t('properties.stateDisabledEmoji') }}
             </button>
           </div>
 
@@ -504,13 +506,13 @@ function getGlowValue(key: string, defaultValue: any = '') {
             <!-- Image for state -->
             <div class="property-row">
               <label class="full-width">
-                <span>Imagem</span>
+                <span>{{ t('properties.imageLabel') }}</span>
                 <div class="file-input">
                   <input
                     type="text"
                     :value="getStateValue(activeStateTab, 'imagePath', '')"
                     readonly
-                    placeholder="Nenhuma imagem"
+                    :placeholder="t('properties.noImage')"
                   />
                   <button @click="selectStateImage(activeStateTab)">📂</button>
                 </div>
@@ -520,7 +522,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
             <!-- Colors for state -->
             <div class="property-row">
               <label>
-                <span>Fundo</span>
+                <span>{{ t('properties.backgroundLabel') }}</span>
                 <input
                   type="color"
                   :value="getStateValue(activeStateTab, 'backgroundColor', '#0078d4')"
@@ -528,7 +530,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
                 />
               </label>
               <label>
-                <span>Texto</span>
+                <span>{{ t('properties.textLabel') }}</span>
                 <input
                   type="color"
                   :value="getStateValue(activeStateTab, 'fontColor', '#ffffff')"
@@ -536,7 +538,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
                 />
               </label>
               <label>
-                <span>Borda</span>
+                <span>{{ t('properties.borderLabel') }}</span>
                 <input
                   type="color"
                   :value="getStateValue(activeStateTab, 'borderColor', '#005a9e')"
@@ -548,7 +550,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
             <!-- Offset for pressed state -->
             <div v-if="activeStateTab === 'pressed'" class="property-row">
               <label>
-                <span>Offset X</span>
+                <span>{{ t('properties.offsetX') }}</span>
                 <input
                   type="number"
                   :value="getStateValue('pressed', 'offsetX', 0)"
@@ -556,7 +558,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
                 />
               </label>
               <label>
-                <span>Offset Y</span>
+                <span>{{ t('properties.offsetY') }}</span>
                 <input
                   type="number"
                   :value="getStateValue('pressed', 'offsetY', 2)"
@@ -568,7 +570,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
             <!-- Opacity for disabled state -->
             <div v-if="activeStateTab === 'disabled'" class="property-row">
               <label class="full-width">
-                <span>Opacidade: {{ getStateValue('disabled', 'opacity', 60) }}%</span>
+                <span>{{ t('properties.opacityLabel') }}: {{ getStateValue('disabled', 'opacity', 60) }}%</span>
                 <input
                   type="range"
                   min="0"
@@ -583,11 +585,11 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
         <!-- Box Style (for box only) -->
         <div v-if="element.type === 'box'" class="property-section">
-          <div class="section-title">📦 Estilo da Box</div>
+          <div class="section-title">📦 {{ t('properties.boxStyle') }}</div>
           
           <div class="property-row">
             <label>
-              <span>Cor de Preenchimento</span>
+              <span>{{ t('properties.fillColor') }}</span>
               <input
                 type="color"
                 :value="element.boxStyle?.fillColor || '#000000'"
@@ -595,7 +597,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Opacidade: {{ element.boxStyle?.fillOpacity || 50 }}%</span>
+              <span>{{ t('properties.opacityLabel') }}: {{ element.boxStyle?.fillOpacity || 50 }}%</span>
               <input
                 type="range"
                 min="0"
@@ -608,7 +610,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
           
           <div class="property-row">
             <label>
-              <span>Cor da Borda</span>
+              <span>{{ t('properties.borderColor') }}</span>
               <input
                 type="color"
                 :value="element.boxStyle?.borderColor || '#ffffff'"
@@ -616,7 +618,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Espessura</span>
+              <span>{{ t('properties.thickness') }}</span>
               <input
                 type="number"
                 :value="element.boxStyle?.borderWidth || 1"
@@ -626,7 +628,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Raio</span>
+              <span>{{ t('properties.radius') }}</span>
               <input
                 type="number"
                 :value="element.boxStyle?.borderRadius || 8"
@@ -640,13 +642,13 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
         <!-- Image element -->
         <div v-if="element.type === 'image'" class="property-section">
-          <div class="section-title">🖼️ Imagem</div>
+          <div class="section-title">🖼️ {{ t('properties.image') }}</div>
           <div class="file-input full-width">
             <input
               type="text"
               :value="element.backgroundImage || ''"
               readonly
-              placeholder="Selecione uma imagem"
+              :placeholder="t('properties.selectImagePlaceholder')"
             />
             <button @click="selectBackgroundImage">📂</button>
           </div>
@@ -654,24 +656,24 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
         <!-- WebView element -->
         <div v-if="element.type === 'webview'" class="property-section webview-section">
-          <div class="section-title">🌐 WebView (iframe)</div>
+          <div class="section-title">🌐 {{ t('properties.webview') }}</div>
           <div class="property-row full-width">
             <label class="full-width">
-              <span>URL da Página</span>
+              <span>{{ t('properties.pageUrl') }}</span>
               <input
                 type="text"
                 :value="element.webviewConfig?.url || 'https://example.com'"
                 @input="updateWebviewConfig('url', ($event.target as HTMLInputElement).value)"
-                placeholder="https://seu-servidor.com/news"
+                :placeholder="t('properties.pageUrlPlaceholder')"
               />
             </label>
           </div>
           <div class="info-box">
-            💡 Use para exibir news, status do servidor ou qualquer página web dentro do patcher.
+            💡 {{ t('properties.webviewTip') }}
           </div>
           <div class="property-row">
             <label>
-              <span>Cor de Fundo</span>
+              <span>{{ t('properties.backgroundColor') }}</span>
               <input
                 type="color"
                 :value="element.webviewConfig?.backgroundColor || '#1e1e1e'"
@@ -679,7 +681,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Cor da Borda</span>
+              <span>{{ t('properties.borderColor') }}</span>
               <input
                 type="color"
                 :value="element.webviewConfig?.borderColor || '#333333'"
@@ -689,7 +691,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
           </div>
           <div class="property-row">
             <label>
-              <span>Espessura Borda</span>
+              <span>{{ t('properties.thickness') }}</span>
               <input
                 type="number"
                 :value="element.webviewConfig?.borderWidth || 1"
@@ -699,7 +701,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Raio da Borda</span>
+              <span>{{ t('properties.borderRadius') }}</span>
               <input
                 type="number"
                 :value="element.webviewConfig?.borderRadius || 8"
@@ -713,12 +715,12 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
         <!-- Effects (all elements) -->
         <div class="property-section">
-          <div class="section-title">✨ Efeitos</div>
+          <div class="section-title">✨ {{ t('properties.effects') }}</div>
           
           <!-- Opacity -->
           <div class="property-row">
             <label class="full-width">
-              <span>Opacidade: {{ getEffectValue('opacity', 100) }}%</span>
+              <span>{{ t('properties.opacityLabel') }}: {{ getEffectValue('opacity', 100) }}%</span>
               <input
                 type="range"
                 min="0"
@@ -732,7 +734,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
           <!-- Border Radius -->
           <div class="property-row">
             <label class="full-width">
-              <span>Borda arredondada: {{ getEffectValue('borderRadius', 0) }}px</span>
+              <span>{{ t('properties.roundedBorder') }}: {{ getEffectValue('borderRadius', 0) }}px</span>
               <input
                 type="range"
                 min="0"
@@ -751,13 +753,13 @@ function getGlowValue(key: string, defaultValue: any = '') {
                 :checked="getShadowValue('enabled', false)"
                 @change="updateEffectProperty('shadow', 'enabled', ($event.target as HTMLInputElement).checked)"
               />
-              <span>Sombra</span>
+              <span>{{ t('properties.shadowLabel') }}</span>
             </label>
             
             <div v-if="getShadowValue('enabled', false)" class="effect-details">
               <div class="property-row">
                 <label>
-                  <span>Cor</span>
+                  <span>{{ t('properties.colorLabel') }}</span>
                   <input
                     type="color"
                     :value="getShadowValue('color', '#000000')"
@@ -765,7 +767,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
                   />
                 </label>
                 <label>
-                  <span>Blur</span>
+                  <span>{{ t('properties.blur') }}</span>
                   <input
                     type="number"
                     :value="getShadowValue('blur', 10)"
@@ -777,7 +779,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               </div>
               <div class="property-row">
                 <label>
-                  <span>Offset X</span>
+                  <span>{{ t('properties.offsetX') }}</span>
                   <input
                     type="number"
                     :value="getShadowValue('offsetX', 0)"
@@ -785,7 +787,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
                   />
                 </label>
                 <label>
-                  <span>Offset Y</span>
+                  <span>{{ t('properties.offsetY') }}</span>
                   <input
                     type="number"
                     :value="getShadowValue('offsetY', 4)"
@@ -804,13 +806,13 @@ function getGlowValue(key: string, defaultValue: any = '') {
                 :checked="getGlowValue('enabled', false)"
                 @change="updateEffectProperty('glow', 'enabled', ($event.target as HTMLInputElement).checked)"
               />
-              <span>Brilho (Glow)</span>
+              <span>{{ t('properties.glowLabel') }}</span>
             </label>
             
             <div v-if="getGlowValue('enabled', false)" class="effect-details">
               <div class="property-row">
                 <label>
-                  <span>Cor</span>
+                  <span>{{ t('properties.colorLabel') }}</span>
                   <input
                     type="color"
                     :value="getGlowValue('color', '#00ff00')"
@@ -818,7 +820,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
                   />
                 </label>
                 <label>
-                  <span>Intensidade</span>
+                  <span>{{ t('properties.intensity') }}</span>
                   <input
                     type="number"
                     :value="getGlowValue('intensity', 10)"
@@ -835,7 +837,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
       <!-- Progress Bar Section -->
       <div :class="['property-section', 'progress-section', { 'progress-selected': uiStore.isProgressBarSelected }]">
-        <div class="section-title">📊 Barra de Progresso</div>
+        <div class="section-title">📊 {{ t('properties.progressBar') }}</div>
         <div class="property-grid-4">
           <label>
             <span>X</span>
@@ -872,7 +874,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
         </div>
         <div class="property-row">
           <label>
-            <span>Fundo</span>
+            <span>{{ t('properties.backgroundLabel') }}</span>
             <input
               type="color"
               :value="projectStore.project.config.progressBar.backgroundColor"
@@ -880,7 +882,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
             />
           </label>
           <label>
-            <span>Preenchimento</span>
+            <span>{{ t('properties.progressFill') }}</span>
             <input
               type="color"
               :value="projectStore.project.config.progressBar.fillColor"
@@ -888,7 +890,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
             />
           </label>
           <label>
-            <span>Borda</span>
+            <span>{{ t('properties.borderLabel') }}</span>
             <input
               type="color"
               :value="projectStore.project.config.progressBar.borderColor"
@@ -900,7 +902,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
 
       <!-- Video Button Section -->
       <div :class="['property-section', 'video-section', { 'video-selected': uiStore.isVideoButtonSelected }]">
-        <div class="section-title">🎬 Vídeo de Fundo</div>
+        <div class="section-title">🎬 {{ t('properties.videoBackground') }}</div>
         
         <!-- Enable Video -->
         <div class="property-row">
@@ -910,21 +912,21 @@ function getGlowValue(key: string, defaultValue: any = '') {
               :checked="videoConfig?.enabled || false"
               @change="updateVideoConfig('enabled', ($event.target as HTMLInputElement).checked)"
             />
-            <span>Ativar vídeo de fundo</span>
+            <span>{{ t('properties.enableVideoBackground') }}</span>
           </label>
         </div>
 
         <!-- Video Path -->
         <div class="property-row">
           <label class="full-width">
-            <span>Arquivo de Vídeo</span>
+            <span>{{ t('properties.videoFile') }}</span>
             <div class="file-input-row">
               <input
                 type="text"
                 :value="videoConfig?.path || ''"
                 readonly
                 class="file-path"
-                placeholder="Nenhum vídeo selecionado"
+                :placeholder="t('properties.noVideoSelected')"
               />
               <button @click="selectVideoFile" class="select-btn">📁</button>
             </div>
@@ -939,15 +941,15 @@ function getGlowValue(key: string, defaultValue: any = '') {
               :checked="videoConfig?.showControls !== false"
               @change="updateVideoConfig('showControls', ($event.target as HTMLInputElement).checked)"
             />
-            <span>Mostrar controles</span>
+            <span>{{ t('properties.showControls') }}</span>
           </label>
           <label class="checkbox-label">
             <input
               type="checkbox"
-              :checked="videoConfig?.autoPlay !== false"
-              @change="updateVideoConfig('autoPlay', ($event.target as HTMLInputElement).checked)"
+              :checked="videoConfig?.autoplay !== false"
+              @change="updateVideoConfig('autoplay', ($event.target as HTMLInputElement).checked)"
             />
-            <span>Auto Play</span>
+            <span>{{ t('properties.autoPlay') }}</span>
           </label>
           <label class="checkbox-label">
             <input
@@ -955,13 +957,13 @@ function getGlowValue(key: string, defaultValue: any = '') {
               :checked="videoConfig?.loop !== false"
               @change="updateVideoConfig('loop', ($event.target as HTMLInputElement).checked)"
             />
-            <span>Loop</span>
+            <span>{{ t('properties.loop') }}</span>
           </label>
         </div>
 
         <!-- Control Button Properties (only shown when video enabled and controls shown) -->
         <template v-if="videoConfig?.enabled && videoConfig?.showControls">
-          <div class="subsection-title">▶ Botão Play/Pause</div>
+          <div class="subsection-title">▶ {{ t('properties.playPauseButton') }}</div>
           
           <!-- Position -->
           <div class="property-grid-4">
@@ -982,7 +984,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Tamanho</span>
+              <span>{{ t('properties.sizeLabel') }}</span>
               <input
                 type="number"
                 :value="videoBtnConfig.size"
@@ -992,7 +994,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Opacidade</span>
+              <span>{{ t('properties.opacityLabel') }}</span>
               <input
                 type="number"
                 :value="(videoBtnConfig.opacity || 1) * 100"
@@ -1007,7 +1009,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
           <!-- Colors -->
           <div class="property-row">
             <label>
-              <span>Fundo</span>
+              <span>{{ t('properties.backgroundLabel') }}</span>
               <input
                 type="color"
                 :value="videoBtnConfig.backgroundColor"
@@ -1015,7 +1017,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Ícone</span>
+              <span>{{ t('settings.iconColor') }}</span>
               <input
                 type="color"
                 :value="videoBtnConfig.iconColor"
@@ -1023,7 +1025,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
             <label>
-              <span>Borda</span>
+              <span>{{ t('properties.borderLabel') }}</span>
               <input
                 type="color"
                 :value="videoBtnConfig.borderColor"
@@ -1035,7 +1037,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
           <!-- Border Width -->
           <div class="property-row">
             <label>
-              <span>Espessura da Borda</span>
+              <span>{{ t('properties.borderWidth') }}</span>
               <input
                 type="number"
                 :value="videoBtnConfig.borderWidth"
@@ -1053,7 +1055,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
     <div class="section layers-section" :class="{ collapsed: !isLayersExpanded }">
       <div class="layers-header" @click="isLayersExpanded = !isLayersExpanded">
         <span class="collapse-icon">{{ isLayersExpanded ? '▼' : '▶' }}</span>
-        <h3>Camadas</h3>
+        <h3>{{ t('layers.title') }}</h3>
         <span class="layer-count">{{ sortedElements.length }}</span>
       </div>
       <div v-show="isLayersExpanded" class="layers-list">
@@ -1074,14 +1076,14 @@ function getGlowValue(key: string, defaultValue: any = '') {
           <div class="layer-actions">
             <button
               class="layer-btn"
-              title="Mover para cima"
+              :title="t('layers.moveUp')"
               @click.stop="moveLayerUp(layerEl.id)"
             >
               ▲
             </button>
             <button
               class="layer-btn"
-              title="Mover para baixo"
+              :title="t('layers.moveDown')"
               @click.stop="moveLayerDown(layerEl.id)"
             >
               ▼
@@ -1089,7 +1091,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
             <button
               class="layer-btn"
               :class="{ active: layerEl.visible !== false }"
-              title="Visibilidade"
+              :title="layerEl.visible === false ? t('layers.show') : t('layers.hide')"
               @click.stop="toggleVisibility(layerEl.id)"
             >
               {{ layerEl.visible === false ? '👁️‍🗨️' : '👁️' }}
@@ -1097,14 +1099,14 @@ function getGlowValue(key: string, defaultValue: any = '') {
             <button
               class="layer-btn"
               :class="{ active: layerEl.locked }"
-              title="Bloquear"
+              :title="layerEl.locked ? t('layers.unlock') : t('layers.lock')"
               @click.stop="toggleLock(layerEl.id)"
             >
               {{ layerEl.locked ? '🔒' : '🔓' }}
             </button>
             <button
               class="layer-btn delete"
-              title="Excluir"
+              :title="t('layers.delete')"
               @click.stop="deleteLayerElement(layerEl.id)"
             >
               🗑️
@@ -1112,7 +1114,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
           </div>
         </div>
         <div v-if="sortedElements.length === 0" class="no-layers">
-          Nenhum elemento criado
+          {{ t('layers.noElements') }}
         </div>
       </div>
     </div>

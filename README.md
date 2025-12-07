@@ -194,6 +194,7 @@ pasta_do_cliente/
 ### Atualizando o Vídeo
 
 Para atualizar o vídeo sem gerar novo patcher:
+
 1. Substitua o arquivo na pasta `resources/`
 2. Mantenha o mesmo nome do arquivo original
 3. O patcher carregará automaticamente o novo vídeo
