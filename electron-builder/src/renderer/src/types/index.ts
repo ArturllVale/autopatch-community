@@ -104,6 +104,28 @@ export interface ProgressBarConfig {
   borderColor: string
 }
 
+// Configuração de vídeo de fundo
+export interface VideoBackgroundConfig {
+  enabled: boolean
+  path: string              // Caminho local do arquivo de vídeo (MP4, WMV, AVI)
+  loop: boolean            // Se deve repetir o vídeo
+  autoplay: boolean        // Se deve iniciar automaticamente
+  muted: boolean           // Se deve iniciar sem som
+  showControls: boolean    // Se mostra botões play/pause
+  
+  // Estilo do botão de controle
+  controlButton?: {
+    x: number              // Posição X do botão
+    y: number              // Posição Y do botão
+    size: number           // Tamanho do botão (diâmetro)
+    backgroundColor: string // Cor de fundo do botão
+    iconColor: string      // Cor do ícone play/pause
+    borderColor: string    // Cor da borda
+    borderWidth: number    // Largura da borda
+    opacity: number        // Opacidade (0-100)
+  }
+}
+
 export interface ProjectConfig {
   // Informações do servidor
   serverName: string
@@ -128,6 +150,9 @@ export interface ProjectConfig {
   elements: UIElement[]
   progressBar: ProgressBarConfig
   backgroundImagePath?: string
+  
+  // Vídeo de fundo (opcional)
+  videoBackground?: VideoBackgroundConfig
 
   // HTML mode
   htmlContent?: string
@@ -196,6 +221,25 @@ export function createDefaultProject(): Project {
         backgroundColor: '#333333',
         fillColor: '#00ff00',
         borderColor: '#666666'
+      },
+      // Vídeo de fundo (desabilitado por padrão)
+      videoBackground: {
+        enabled: false,
+        path: '',
+        loop: true,
+        autoplay: true,
+        muted: true,
+        showControls: true,
+        controlButton: {
+          x: 720,
+          y: 440,
+          size: 50,
+          backgroundColor: '#333333',
+          iconColor: '#ffffff',
+          borderColor: '#666666',
+          borderWidth: 2,
+          opacity: 100
+        }
       },
       // Default HTML mode content
       htmlContent: getDefaultHtml(),

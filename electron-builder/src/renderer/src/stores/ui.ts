@@ -21,6 +21,7 @@ export const useUiStore = defineStore('ui', () => {
   const snapToGrid = ref(true)
   const gridSize = ref(10)
   const isProgressBarSelected = ref(false)
+  const isVideoButtonSelected = ref(false)
   
   // Refresh counter (incrementing forces reactivity)
   const refreshCounter = ref(0)
@@ -99,6 +100,12 @@ export const useUiStore = defineStore('ui', () => {
 
   function selectProgressBar(selected: boolean) {
     isProgressBarSelected.value = selected
+    if (selected) isVideoButtonSelected.value = false
+  }
+
+  function selectVideoButton(selected: boolean) {
+    isVideoButtonSelected.value = selected
+    if (selected) isProgressBarSelected.value = false
   }
 
   function refreshAll() {
@@ -123,6 +130,7 @@ export const useUiStore = defineStore('ui', () => {
     snapToGrid,
     gridSize,
     isProgressBarSelected,
+    isVideoButtonSelected,
     refreshCounter,
     // Actions
     setActiveTab,
@@ -142,6 +150,7 @@ export const useUiStore = defineStore('ui', () => {
     toggleSnap,
     setGridSize,
     selectProgressBar,
+    selectVideoButton,
     refreshAll
   }
 })

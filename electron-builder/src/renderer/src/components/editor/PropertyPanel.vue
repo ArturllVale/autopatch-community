@@ -119,10 +119,76 @@ function updateProgressBar(key: string, value: any) {
   projectStore.updateConfig({ progressBar })
 }
 
+// Video background functions
+const videoConfig = computed(() => projectStore.project.config.videoBackground)
+const videoBtnConfig = computed(() => {
+  return videoConfig.value?.controlButton || {
+    x: 10,
+    y: 10,
+    size: 40,
+    backgroundColor: '#333333',
+    iconColor: '#ffffff',
+    borderColor: '#666666',
+    borderWidth: 2,
+    opacity: 1.0
+  }
+})
+
+function updateVideoConfig(key: string, value: any) {
+  const current = projectStore.project.config.videoBackground || {
+    enabled: false,
+    videoPath: '',
+    showControls: true,
+    autoPlay: true,
+    loop: true,
+    muted: true,
+    controlButton: videoBtnConfig.value
+  }
+  projectStore.updateConfig({
+    videoBackground: { ...current, [key]: value }
+  })
+}
+
+function updateVideoButtonConfig(key: string, value: any) {
+  const currentVideo = videoConfig.value || {
+    enabled: false,
+    videoPath: '',
+    showControls: true,
+    autoPlay: true,
+    loop: true,
+    muted: true,
+    controlButton: videoBtnConfig.value
+  }
+  projectStore.updateConfig({
+    videoBackground: {
+      ...currentVideo,
+      controlButton: {
+        ...videoBtnConfig.value,
+        [key]: value
+      }
+    }
+  })
+}
+
+async function selectVideoFile() {
+  try {
+    const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
+      title: 'Selecionar Vídeo',
+      filters: [{ name: 'Vídeos', extensions: ['mp4', 'webm', 'avi', 'wmv'] }]
+    })
+    if (result) {
+      updateVideoConfig('path', result)
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 // Layer functions
 function selectLayerElement(id: string) {
   projectStore.selectElement(id)
   uiStore.selectProgressBar(false)
+  uiStore.selectVideoButton(false)
 }
 
 function toggleVisibility(id: string) {
@@ -831,6 +897,156 @@ function getGlowValue(key: string, defaultValue: any = '') {
           </label>
         </div>
       </div>
+
+      <!-- Video Button Section -->
+      <div :class="['property-section', 'video-section', { 'video-selected': uiStore.isVideoButtonSelected }]">
+        <div class="section-title">🎬 Vídeo de Fundo</div>
+        
+        <!-- Enable Video -->
+        <div class="property-row">
+          <label class="checkbox-label full-width">
+            <input
+              type="checkbox"
+              :checked="videoConfig?.enabled || false"
+              @change="updateVideoConfig('enabled', ($event.target as HTMLInputElement).checked)"
+            />
+            <span>Ativar vídeo de fundo</span>
+          </label>
+        </div>
+
+        <!-- Video Path -->
+        <div class="property-row">
+          <label class="full-width">
+            <span>Arquivo de Vídeo</span>
+            <div class="file-input-row">
+              <input
+                type="text"
+                :value="videoConfig?.path || ''"
+                readonly
+                class="file-path"
+                placeholder="Nenhum vídeo selecionado"
+              />
+              <button @click="selectVideoFile" class="select-btn">📁</button>
+            </div>
+          </label>
+        </div>
+
+        <!-- Video Options -->
+        <div class="property-row">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              :checked="videoConfig?.showControls !== false"
+              @change="updateVideoConfig('showControls', ($event.target as HTMLInputElement).checked)"
+            />
+            <span>Mostrar controles</span>
+          </label>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              :checked="videoConfig?.autoPlay !== false"
+              @change="updateVideoConfig('autoPlay', ($event.target as HTMLInputElement).checked)"
+            />
+            <span>Auto Play</span>
+          </label>
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              :checked="videoConfig?.loop !== false"
+              @change="updateVideoConfig('loop', ($event.target as HTMLInputElement).checked)"
+            />
+            <span>Loop</span>
+          </label>
+        </div>
+
+        <!-- Control Button Properties (only shown when video enabled and controls shown) -->
+        <template v-if="videoConfig?.enabled && videoConfig?.showControls">
+          <div class="subsection-title">▶ Botão Play/Pause</div>
+          
+          <!-- Position -->
+          <div class="property-grid-4">
+            <label>
+              <span>X</span>
+              <input
+                type="number"
+                :value="videoBtnConfig.x"
+                @input="updateVideoButtonConfig('x', Number(($event.target as HTMLInputElement).value))"
+              />
+            </label>
+            <label>
+              <span>Y</span>
+              <input
+                type="number"
+                :value="videoBtnConfig.y"
+                @input="updateVideoButtonConfig('y', Number(($event.target as HTMLInputElement).value))"
+              />
+            </label>
+            <label>
+              <span>Tamanho</span>
+              <input
+                type="number"
+                :value="videoBtnConfig.size"
+                @input="updateVideoButtonConfig('size', Number(($event.target as HTMLInputElement).value))"
+                min="16"
+                max="100"
+              />
+            </label>
+            <label>
+              <span>Opacidade</span>
+              <input
+                type="number"
+                :value="(videoBtnConfig.opacity || 1) * 100"
+                @input="updateVideoButtonConfig('opacity', Number(($event.target as HTMLInputElement).value) / 100)"
+                min="0"
+                max="100"
+                step="5"
+              />
+            </label>
+          </div>
+
+          <!-- Colors -->
+          <div class="property-row">
+            <label>
+              <span>Fundo</span>
+              <input
+                type="color"
+                :value="videoBtnConfig.backgroundColor"
+                @input="updateVideoButtonConfig('backgroundColor', ($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <label>
+              <span>Ícone</span>
+              <input
+                type="color"
+                :value="videoBtnConfig.iconColor"
+                @input="updateVideoButtonConfig('iconColor', ($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <label>
+              <span>Borda</span>
+              <input
+                type="color"
+                :value="videoBtnConfig.borderColor"
+                @input="updateVideoButtonConfig('borderColor', ($event.target as HTMLInputElement).value)"
+              />
+            </label>
+          </div>
+
+          <!-- Border Width -->
+          <div class="property-row">
+            <label>
+              <span>Espessura da Borda</span>
+              <input
+                type="number"
+                :value="videoBtnConfig.borderWidth"
+                @input="updateVideoButtonConfig('borderWidth', Number(($event.target as HTMLInputElement).value))"
+                min="0"
+                max="10"
+              />
+            </label>
+          </div>
+        </template>
+      </div>
     </div>
 
     <!-- Layers Section -->
@@ -1340,5 +1556,56 @@ select {
   color: #666;
   font-size: 12px;
   padding: 20px;
+}
+
+/* Video Section */
+.video-section {
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.video-section.video-selected {
+  border-color: #9c27b0;
+  background: rgba(156, 39, 176, 0.1);
+}
+
+.subsection-title {
+  font-size: 11px;
+  color: #9c27b0;
+  margin: 12px 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #333;
+}
+
+.file-input-row {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.file-input-row .file-path {
+  flex: 1;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #aaa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-input-row .select-btn {
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.file-input-row .select-btn:hover {
+  background: #444;
+  border-color: #666;
 }
 </style>

@@ -249,6 +249,31 @@ namespace autopatch
         std::string fillImage;
     };
 
+    // Estilo do botão de controle de vídeo
+    struct VideoControlButtonStyle
+    {
+        int x = 740;   // Posição X
+        int y = 550;   // Posição Y
+        int size = 50; // Tamanho (diâmetro)
+        std::string backgroundColor = "#000000";
+        std::string iconColor = "#ffffff";
+        std::string borderColor = "#ffffff";
+        int borderWidth = 2;
+        int opacity = 50; // 0-100
+    };
+
+    // Configuração de vídeo de fundo
+    struct VideoBackgroundConfig
+    {
+        bool enabled = false;
+        std::string videoFile;                 // Nome do arquivo de vídeo (ex: "background.mp4")
+        bool loop = true;                      // Repetir o vídeo
+        bool autoplay = true;                  // Iniciar automaticamente
+        bool muted = true;                     // Sem som
+        bool showControls = false;             // Mostrar botão play/pause
+        VideoControlButtonStyle controlButton; // Estilo do botão
+    };
+
     // Configuração do modo imagem
     struct ImageModeConfig
     {
@@ -260,6 +285,7 @@ namespace autopatch
         ProgressBarConfig progressBar;
         std::string backgroundImage; // Base64 encoded
         std::string fontPath;
+        VideoBackgroundConfig videoBackground; // Vídeo de fundo
     };
 
     // Configuração do modo HTML

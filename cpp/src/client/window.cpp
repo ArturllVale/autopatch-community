@@ -570,6 +570,44 @@ namespace autopatch
             {
                 m_ui->AddWebView(wv, m_hwnd);
             }
+
+            // Inicializa vídeo de fundo se configurado
+            const auto &vb = m_config.imageMode->videoBackground;
+            if (vb.enabled && !vb.videoFile.empty())
+            {
+                // Obtém o diretório do EXE
+                wchar_t exePath[MAX_PATH];
+                GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+                std::wstring exeDir(exePath);
+                size_t lastSlash = exeDir.find_last_of(L"\\/");
+                if (lastSlash != std::wstring::npos)
+                {
+                    exeDir = exeDir.substr(0, lastSlash + 1);
+                }
+
+                // Converte nome do arquivo para wide string
+                std::wstring videoFileName;
+                int size = MultiByteToWideChar(CP_UTF8, 0, vb.videoFile.c_str(), -1, nullptr, 0);
+                if (size > 0)
+                {
+                    videoFileName.resize(size - 1);
+                    MultiByteToWideChar(CP_UTF8, 0, vb.videoFile.c_str(), -1, &videoFileName[0], size);
+                }
+
+                // Caminho completo do vídeo (na subpasta resources/)
+                std::wstring videoPath = exeDir + L"resources\\" + videoFileName;
+
+                // Pega estilo do botão de controle
+                const auto &btn = vb.controlButton;
+
+                if (m_ui->InitializeVideo(m_hwnd, videoPath, vb.loop, vb.autoplay, vb.muted, vb.showControls,
+                                          btn.x, btn.y, btn.size, btn.backgroundColor, btn.iconColor,
+                                          btn.borderColor, btn.borderWidth, btn.opacity))
+                {
+                    // Vídeo inicializado com sucesso
+                    // Os controles serão mostrados se showControls estiver habilitado
+                }
+            }
         }
 
         ShowWindow(m_hwnd, SW_SHOW);
@@ -768,7 +806,7 @@ namespace autopatch
         // Isso evita que o BitBlt sobrescreva os controles WebBrowser
         auto webViewRects = m_ui->GetWebViewRects();
         HRGN clipRegion = CreateRectRgn(0, 0, rc.right, rc.bottom);
-        for (const auto& wvRect : webViewRects)
+        for (const auto &wvRect : webViewRects)
         {
             HRGN wvRegion = CreateRectRgn(wvRect.left, wvRect.top, wvRect.right, wvRect.bottom);
             CombineRgn(clipRegion, clipRegion, wvRegion, RGN_DIFF);
@@ -880,6 +918,29 @@ namespace autopatch
         else if (action == L"close" || action == L"exit")
         {
             CloseWindow();
+        }
+        else if (action == L"toggle_video")
+        {
+            // Toggle video play/pause
+            if (m_ui->HasVideo())
+            {
+                m_ui->ToggleVideo();
+                InvalidateRect(m_hwnd, nullptr, FALSE);
+            }
+        }
+        else if (action == L"play_video")
+        {
+            if (m_ui->HasVideo())
+            {
+                m_ui->PlayVideo();
+            }
+        }
+        else if (action == L"pause_video")
+        {
+            if (m_ui->HasVideo())
+            {
+                m_ui->PauseVideo();
+            }
         }
     }
 

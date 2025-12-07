@@ -36,6 +36,40 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   function loadProject(data: Project) {
+    // Ensure videoBackground has all required fields with defaults
+    if (!data.config.videoBackground) {
+      data.config.videoBackground = {
+        enabled: false,
+        path: '',
+        loop: true,
+        autoplay: true,
+        muted: true,
+        showControls: true,
+        controlButton: {
+          x: 720,
+          y: 440,
+          size: 50,
+          backgroundColor: '#333333',
+          iconColor: '#ffffff',
+          borderColor: '#666666',
+          borderWidth: 2,
+          opacity: 100
+        }
+      }
+    } else if (!data.config.videoBackground.controlButton) {
+      // Add controlButton if missing
+      data.config.videoBackground.controlButton = {
+        x: 720,
+        y: 440,
+        size: 50,
+        backgroundColor: '#333333',
+        iconColor: '#ffffff',
+        borderColor: '#666666',
+        borderWidth: 2,
+        opacity: 100
+      }
+    }
+    
     project.value = data
     project.value.isDirty = false
     selectedElementId.value = null

@@ -98,6 +98,8 @@ add_executable(AutoPatcher WIN32
     src/client/mshtml_window.h
     src/client/embedded_browser.cpp
     src/client/embedded_browser.h
+    src/client/video_background.cpp
+    src/client/video_background.h
     src/client/resources.rc
 )
 
@@ -108,6 +110,9 @@ target_link_libraries(AutoPatcher PRIVATE
     uxtheme
     ole32
     oleaut32
+    mfplat
+    mfuuid
+    mfreadwrite
 )
 
 # Set subsystem to Windows

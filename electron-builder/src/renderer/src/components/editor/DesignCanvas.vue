@@ -23,6 +23,13 @@ const progressBarStartY = ref(0)
 const progressBarElementStartX = ref(0)
 const progressBarElementStartY = ref(0)
 
+// Video control button drag state
+const isDraggingVideoBtn = ref(false)
+const videoBtnStartX = ref(0)
+const videoBtnStartY = ref(0)
+const videoBtnElementStartX = ref(0)
+const videoBtnElementStartY = ref(0)
+
 // Background image - use a ref to store the data URL
 const backgroundDataUrl = ref<string>('')
 
@@ -299,6 +306,9 @@ function startDrag(element: UIElement, event: MouseEvent) {
   event.stopPropagation()
 
   projectStore.selectElement(element.id)
+  uiStore.selectProgressBar(false)
+  uiStore.selectVideoButton(false)
+  
   isDragging.value = true
   dragElement.value = element
   dragStartX.value = event.clientX
@@ -355,17 +365,43 @@ function onMouseMove(event: MouseEvent) {
 
     projectStore.updateProgressBar({ x: newX, y: newY })
   }
+
+  // Handle video button dragging
+  if (isDraggingVideoBtn.value) {
+    const dx = (event.clientX - videoBtnStartX.value) / uiStore.canvasZoom
+    const dy = (event.clientY - videoBtnStartY.value) / uiStore.canvasZoom
+
+    let newX = videoBtnElementStartX.value + dx
+    let newY = videoBtnElementStartY.value + dy
+
+    // Snap to grid
+    if (uiStore.snapToGrid) {
+      newX = Math.round(newX / uiStore.gridSize) * uiStore.gridSize
+      newY = Math.round(newY / uiStore.gridSize) * uiStore.gridSize
+    }
+
+    // Clamp to canvas bounds
+    const btnSize = videoBtnConfig.value.size
+    const maxX = projectStore.project.config.windowWidth - btnSize
+    const maxY = projectStore.project.config.windowHeight - btnSize
+    newX = Math.max(0, Math.min(maxX, newX))
+    newY = Math.max(0, Math.min(maxY, newY))
+
+    updateVideoBtnPosition(newX, newY)
+  }
 }
 
 function onMouseUp() {
   isDragging.value = false
   dragElement.value = null
   isDraggingProgressBar.value = false
+  isDraggingVideoBtn.value = false
 }
 
 function clearSelection() {
   projectStore.selectElement(null)
   uiStore.selectProgressBar(false)
+  uiStore.selectVideoButton(false)
 }
 
 // Progress bar functions
@@ -376,6 +412,7 @@ function startDragProgressBar(event: MouseEvent) {
   // Deselect elements and select progress bar
   projectStore.selectElement(null)
   uiStore.selectProgressBar(true)
+  uiStore.selectVideoButton(false)
   
   isDraggingProgressBar.value = true
   progressBarStartX.value = event.clientX
@@ -388,6 +425,77 @@ function selectProgressBar(event: MouseEvent) {
   event.stopPropagation()
   projectStore.selectElement(null)
   uiStore.selectProgressBar(true)
+  uiStore.selectVideoButton(false)
+}
+
+// Video button config computed
+const videoConfig = computed(() => {
+  const vc = projectStore.project.config.videoBackground
+  console.log('[VIDEO DEBUG] videoConfig:', vc)
+  return vc
+})
+const videoBtnConfig = computed(() => videoConfig.value?.controlButton || {
+  x: 740,
+  y: 550,
+  size: 50,
+  backgroundColor: '#000000',
+  iconColor: '#ffffff',
+  borderColor: '#ffffff',
+  borderWidth: 2,
+  opacity: 50
+})
+
+// Video button style
+const videoBtnStyle = computed(() => {
+  const btn = videoBtnConfig.value
+  return {
+    left: `${btn.x}px`,
+    top: `${btn.y}px`,
+    width: `${btn.size}px`,
+    height: `${btn.size}px`,
+    backgroundColor: btn.backgroundColor,
+    borderColor: btn.borderColor,
+    borderWidth: `${btn.borderWidth}px`,
+    opacity: btn.opacity / 100
+  }
+})
+
+// Start dragging video button
+function startDragVideoBtn(event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  
+  projectStore.selectElement(null)
+  uiStore.selectProgressBar(false)
+  uiStore.selectVideoButton(true)
+  
+  isDraggingVideoBtn.value = true
+  videoBtnStartX.value = event.clientX
+  videoBtnStartY.value = event.clientY
+  videoBtnElementStartX.value = videoBtnConfig.value.x
+  videoBtnElementStartY.value = videoBtnConfig.value.y
+}
+
+// Select video button
+function selectVideoBtn(event: MouseEvent) {
+  event.stopPropagation()
+  projectStore.selectElement(null)
+  uiStore.selectProgressBar(false)
+  uiStore.selectVideoButton(true)
+}
+
+// Update video button position
+function updateVideoBtnPosition(x: number, y: number) {
+  projectStore.updateConfig({
+    videoBackground: {
+      ...videoConfig.value!,
+      controlButton: {
+        ...videoBtnConfig.value,
+        x,
+        y
+      }
+    }
+  })
 }
 
 function getElementLabel(element: UIElement) {
@@ -587,6 +695,23 @@ onUnmounted(() => {
               <div class="resize-handle sw"></div>
               <div class="resize-handle se"></div>
             </template>
+          </div>
+
+          <!-- Video Control Button Preview (Draggable) -->
+          <div
+            v-if="videoConfig?.enabled && videoConfig?.showControls"
+            :class="['video-control-btn-preview', { selected: uiStore.isVideoButtonSelected }]"
+            :style="videoBtnStyle"
+            @mousedown="startDragVideoBtn($event)"
+            @click="selectVideoBtn($event)"
+          >
+            <!-- Play/Pause Icon -->
+            <svg viewBox="0 0 24 24" class="video-btn-icon" :style="{ fill: videoBtnConfig.iconColor }">
+              <!-- Pause icon (two bars) -->
+              <rect x="6" y="5" width="4" height="14" />
+              <rect x="14" y="5" width="4" height="14" />
+            </svg>
+            <span class="video-btn-label">▶️ Play/Pause</span>
           </div>
         </div>
       </div>
@@ -870,5 +995,49 @@ onUnmounted(() => {
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   pointer-events: none;
+}
+
+/* Video control button preview */
+.video-control-btn-preview {
+  position: absolute;
+  border-radius: 50%;
+  border-style: solid;
+  cursor: move;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  z-index: 9999;
+}
+
+.video-control-btn-preview:hover {
+  box-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
+}
+
+.video-control-btn-preview.selected {
+  box-shadow: 0 0 0 2px #ff9800, 0 0 12px rgba(255, 165, 0, 0.8);
+}
+
+.video-btn-icon {
+  width: 50%;
+  height: 50%;
+  pointer-events: none;
+}
+
+.video-btn-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10px;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 </style>

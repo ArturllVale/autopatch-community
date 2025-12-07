@@ -1,7 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { readFile, writeFile } from 'fs/promises'
+import { readFile, writeFile, copyFile, mkdir } from 'fs/promises'
 import { spawn } from 'child_process'
 import icon from '../../resources/icon.png?asset'
 
@@ -127,13 +127,32 @@ function setupIpcHandlers(): void {
     console.log('[BUILD] Options received:', JSON.stringify(options).substring(0, 100))
     
     const fs = require('fs')
-    const { copyFile } = require('fs/promises')
+    const path = require('path')
     
     try {
       const { config, outputPath, backgroundImagePath, iconPath } = options
 
       console.log('[BUILD] Starting patcher generation...')
       console.log('[BUILD] Output path:', outputPath)
+
+      // Handle video background - save original path for later copying
+      let videoSourcePath = ''
+      let videoFileName = ''
+      if (config.videoBackground?.enabled && config.videoBackground?.path) {
+        videoSourcePath = config.videoBackground.path
+        if (fs.existsSync(videoSourcePath)) {
+          // Get just the filename
+          videoFileName = path.basename(videoSourcePath)
+          // Update config to use just the filename (video will be in same folder as EXE)
+          config.videoBackground.videoFile = videoFileName
+          // Remove the full path from config (we don't want to store it)
+          delete config.videoBackground.path
+          console.log('[BUILD] Video source:', videoSourcePath)
+          console.log('[BUILD] Video file:', videoFileName)
+        } else {
+          console.log('[BUILD] Video file not found:', videoSourcePath)
+        }
+      }
 
       // 1. Find the AutoPatcher.exe template
       // In dev: relative to project root in cpp/build/bin/Release
@@ -228,9 +247,25 @@ function setupIpcHandlers(): void {
           console.log('[BUILD] stderr:', text)
         })
 
-        child.on('close', (code) => {
+        child.on('close', async (code) => {
           console.log('[BUILD] Process exited with code:', code)
           if (code === 0) {
+            // Copy video file if enabled (to resources subfolder)
+            if (videoSourcePath && videoFileName) {
+              try {
+                const outputDir = path.dirname(outputPath)
+                const resourcesDir = path.join(outputDir, 'resources')
+                
+                // Create resources folder if it doesn't exist
+                await mkdir(resourcesDir, { recursive: true })
+                
+                const videoDestPath = path.join(resourcesDir, videoFileName)
+                await copyFile(videoSourcePath, videoDestPath)
+                console.log('[BUILD] Video copied to:', videoDestPath)
+              } catch (err: any) {
+                console.error('[BUILD] Failed to copy video:', err)
+              }
+            }
             resolve({ success: true, message: stdout || 'Patcher gerado com sucesso!' })
           } else {
             resolve({ success: false, error: stderr || stdout || `Processo terminou com código ${code}` })

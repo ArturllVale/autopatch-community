@@ -9,6 +9,7 @@
 #include <objidl.h>
 #include <gdiplus.h>
 #include "embedded_browser.h"
+#include "video_background.h"
 
 #pragma comment(lib, "gdiplus.lib")
 
@@ -256,6 +257,22 @@ namespace autopatch
         // Obtém os retângulos das WebViews visíveis (para clipping no BitBlt)
         std::vector<RECT> GetWebViewRects() const;
 
+        // Video background
+        bool InitializeVideo(HWND hwnd, const std::wstring &url, bool loop, bool autoplay, bool muted, bool showControls,
+                             int btnX, int btnY, int btnSize, const std::string &btnBgColor, const std::string &btnIconColor,
+                             const std::string &btnBorderColor, int btnBorderWidth, int btnOpacity);
+        void PlayVideo();
+        void PauseVideo();
+        void ToggleVideo();
+        bool IsVideoPlaying() const;
+        bool HasVideo() const { return m_videoBackground != nullptr; }
+        void ResizeVideo(int width, int height);
+
+        // Retorna se tem controles de vídeo visíveis
+        bool HasVideoControls() const { return m_showVideoControls; }
+        RECT GetVideoControlRect() const;
+        bool IsInVideoControlArea(int x, int y) const;
+
     private:
         UIButton *GetButtonAt(int x, int y);
         Gdiplus::Image *GetButtonImage(const UIButton &button);
@@ -266,6 +283,7 @@ namespace autopatch
         void RenderButton(Gdiplus::Graphics &g, const UIButton &btn);
         void RenderLabel(Gdiplus::Graphics &g, const UILabel &lbl);
         void RenderProgressBar(Gdiplus::Graphics &g);
+        void RenderVideoBackground(Gdiplus::Graphics &g);
 
         // Helper para converter cor hex
         static Gdiplus::Color ParseColor(const std::string &hex, int opacity = 100);
@@ -288,6 +306,20 @@ namespace autopatch
 
         ButtonActionCallback m_actionCallback;
         UIButton *m_pressedButton = nullptr;
+
+        // Video background
+        std::unique_ptr<VideoBackground> m_videoBackground;
+        bool m_showVideoControls = false;
+        bool m_showVideoBackground = true; // false = show static image instead
+        RECT m_videoControlRect = {0, 0, 0, 0};
+        bool m_videoControlHover = false;
+
+        // Video control button style
+        Gdiplus::Color m_videoBtnBgColor{128, 0, 0, 0};
+        Gdiplus::Color m_videoBtnIconColor{255, 255, 255, 255};
+        Gdiplus::Color m_videoBtnBorderColor{200, 255, 255, 255};
+        int m_videoBtnBorderWidth = 2;
+        int m_videoBtnOpacity = 50;
 
         // HTML mode content (para futura implementação de WebView2)
         std::string m_htmlContent;

@@ -23,6 +23,7 @@
 - 🎨 **Builder Visual Moderno** - Interface drag-and-drop para criar patchers customizados
 - 📦 **Configuração Embutida** - Tudo no EXE, sem arquivos externos (INI/JSON)
 - 🖼️ **UI Customizável** - Imagem de fundo, botões, labels, WebViews e mais
+- 🎬 **Vídeo de Fundo** - Suporte a vídeo MP4 como background animado
 - 🔄 **Formatos de Patch** - Suporte a GRF, THOR, GPF e RGZ
 - 🚀 **Executável Leve** - ~700KB, sem dependências de DLL
 - 🪟 **Bordas Arredondadas** - Suporte a window border radius
@@ -32,11 +33,11 @@
 
 O projeto usa uma arquitetura moderna:
 
-| Componente | Tecnologia | Descrição |
-|------------|------------|-----------|
-| **Builder** | Electron + Vue 3 + TypeScript | Interface visual para criar patchers |
-| **Patcher** | C++ Win32/GDI+ | Executável nativo para usuários finais |
-| **Embedder** | C++ | Embute configuração/recursos no EXE |
+| Componente   | Tecnologia                    | Descrição                              |
+| ------------ | ----------------------------- | -------------------------------------- |
+| **Builder**  | Electron + Vue 3 + TypeScript | Interface visual para criar patchers   |
+| **Patcher**  | C++ Win32/GDI+                | Executável nativo para usuários finais |
+| **Embedder** | C++                           | Embute configuração/recursos no EXE    |
 
 ## 📁 Estrutura do Projeto
 
@@ -59,7 +60,7 @@ autopatch-community/
 │   │   ├── core/               # Biblioteca compartilhada
 │   │   │   ├── config.cpp/h    # Parser de configuração JSON
 │   │   │   ├── grf.cpp/h       # Parser GRF
-│   │   │   ├── thor.cpp/h      # Parser THOR  
+│   │   │   ├── thor.cpp/h      # Parser THOR
 │   │   │   ├── http.cpp/h      # Download HTTP (WinInet)
 │   │   │   ├── patcher.cpp/h   # Lógica de patching
 │   │   │   └── resources.cpp/h # Extração de recursos RC
@@ -107,6 +108,7 @@ cmake --build . --config Release
 ```
 
 Os executáveis serão gerados em `cpp/build/bin/Release/`:
+
 - `AutoPatcher.exe` - Template do patcher
 - `AutoPatchBuilder.exe` - Ferramenta de build
 - `embedder.exe` - Embute recursos
@@ -120,6 +122,7 @@ Os executáveis serão gerados em `cpp/build/bin/Release/`:
    - Dimensões da janela
 3. Adicione elementos no canvas:
    - 🖼️ Imagem de fundo
+   - 🎬 Vídeo de fundo (MP4) com botão play/pause customizável
    - 🔘 Botões (com estados hover/pressed)
    - 📝 Labels (texto dinâmico)
    - 📊 Barra de progresso
@@ -160,33 +163,78 @@ servidor/
 }
 ```
 
+## 🎬 Vídeo de Fundo
+
+O AutoPatch suporta vídeo MP4 como plano de fundo animado, com botão play/pause totalmente customizável.
+
+### Estrutura de Arquivos
+
+```
+pasta_do_cliente/
+├── MeuPatcher.exe        # Executável do patcher
+├── background.bmp        # Imagem de fundo (fallback)
+└── resources/
+    └── video_fundo.mp4   # Vídeo de fundo
+```
+
+### Configuração no Builder
+
+1. No painel de **Propriedades**, ative "Vídeo de Fundo"
+2. Selecione o arquivo MP4
+3. Configure as opções:
+   - **Mostrar controles**: Exibe botão play/pause
+   - **Auto Play**: Inicia automaticamente
+   - **Loop**: Repete o vídeo
+4. Customize o botão play/pause:
+   - Posição (arraste no canvas ou defina X/Y)
+   - Tamanho
+   - Cores (fundo, ícone, borda)
+   - Opacidade
+
+### Atualizando o Vídeo
+
+Para atualizar o vídeo sem gerar novo patcher:
+1. Substitua o arquivo na pasta `resources/`
+2. Mantenha o mesmo nome do arquivo original
+3. O patcher carregará automaticamente o novo vídeo
+
+### Formatos Suportados
+
+- **MP4** (H.264/AAC) - Recomendado
+- **WMV** (Windows Media Video)
+- **AVI** (com codecs compatíveis)
+
 ## 🎮 Ações dos Botões
 
-| Action | Descrição |
-|--------|-----------|
-| `start_game` | Inicia o executável do jogo |
-| `check_files` | Verifica e baixa patches |
-| `close` | Fecha o patcher |
-| `minimize` | Minimiza a janela |
-| `url:https://...` | Abre URL no navegador |
+| Action            | Descrição                   |
+| ----------------- | --------------------------- |
+| `start_game`      | Inicia o executável do jogo |
+| `check_files`     | Verifica e baixa patches    |
+| `close`           | Fecha o patcher             |
+| `minimize`        | Minimiza a janela           |
+| `url:https://...` | Abre URL no navegador       |
 
 ## 📋 Formatos Suportados
 
 ### GRF (Gravity Resource File)
+
 - Versões: 1.02, 1.03, 2.00, 3.00
 - Compressão: ZLIB
 - Criptografia: DES (v1.x)
 
 ### THOR (Thor Patcher Format)
+
 - Formato otimizado para patches incrementais
 - Suporta remoção de arquivos
 - Compressão ZLIB
 
 ### GPF (Gravity Patch File)
+
 - Mesmo formato do GRF
 - Usado para patches que modificam GRF existente
 
 ### RGZ (Ragnarok GZip)
+
 - Arquivo GZIP com estrutura de diretórios
 - Extrai arquivos para pasta
 

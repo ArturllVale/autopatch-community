@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useProjectStore } from '../../stores/project'
 import { useUiStore } from '../../stores/ui'
 
@@ -17,6 +17,56 @@ const windowWidth = ref(projectStore.project.config.windowWidth)
 const windowHeight = ref(projectStore.project.config.windowHeight)
 const iconPath = ref(projectStore.project.config.iconPath || '')
 
+// Video background settings
+const videoEnabled = ref(false)
+const videoPath = ref('')
+const videoLoop = ref(true)
+const videoAutoplay = ref(true)
+const videoMuted = ref(true)
+const videoShowControls = ref(false)
+
+// Video control button style
+const videoBtnX = ref(740)
+const videoBtnY = ref(550)
+const videoBtnSize = ref(50)
+const videoBtnBgColor = ref('#000000')
+const videoBtnIconColor = ref('#ffffff')
+const videoBtnBorderColor = ref('#ffffff')
+const videoBtnBorderWidth = ref(2)
+const videoBtnOpacity = ref(50)
+
+// Load video settings from store
+function loadVideoSettings() {
+  const vb = projectStore.project.config.videoBackground
+  videoEnabled.value = vb?.enabled || false
+  videoPath.value = vb?.path || ''
+  videoLoop.value = vb?.loop ?? true
+  videoAutoplay.value = vb?.autoplay ?? true
+  videoMuted.value = vb?.muted ?? true
+  videoShowControls.value = vb?.showControls ?? false
+  
+  // Control button style
+  const btn = vb?.controlButton
+  videoBtnX.value = btn?.x ?? 740
+  videoBtnY.value = btn?.y ?? 550
+  videoBtnSize.value = btn?.size ?? 50
+  videoBtnBgColor.value = btn?.backgroundColor ?? '#000000'
+  videoBtnIconColor.value = btn?.iconColor ?? '#ffffff'
+  videoBtnBorderColor.value = btn?.borderColor ?? '#ffffff'
+  videoBtnBorderWidth.value = btn?.borderWidth ?? 2
+  videoBtnOpacity.value = btn?.opacity ?? 50
+}
+
+// Load on mount and watch for store changes
+onMounted(() => {
+  loadVideoSettings()
+})
+
+// Watch store changes to reload video settings when navigating back
+watch(() => projectStore.project.config.videoBackground, () => {
+  loadVideoSettings()
+}, { deep: true })
+
 function saveSettings() {
   projectStore.updateConfig({
     serverName: serverName.value,
@@ -27,7 +77,25 @@ function saveSettings() {
     grfFiles: grfFiles.value.split('\n').filter(f => f.trim()),
     windowWidth: windowWidth.value,
     windowHeight: windowHeight.value,
-    iconPath: iconPath.value || undefined
+    iconPath: iconPath.value || undefined,
+    videoBackground: {
+      enabled: videoEnabled.value,
+      path: videoPath.value,
+      loop: videoLoop.value,
+      autoplay: videoAutoplay.value,
+      muted: videoMuted.value,
+      showControls: videoShowControls.value,
+      controlButton: {
+        x: videoBtnX.value,
+        y: videoBtnY.value,
+        size: videoBtnSize.value,
+        backgroundColor: videoBtnBgColor.value,
+        iconColor: videoBtnIconColor.value,
+        borderColor: videoBtnBorderColor.value,
+        borderWidth: videoBtnBorderWidth.value,
+        opacity: videoBtnOpacity.value
+      }
+    }
   })
   uiStore.setStatus('Configurações salvas')
 }
@@ -60,9 +128,28 @@ async function selectIconFile() {
   }
 }
 
+async function selectVideoFile() {
+  try {
+    const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
+      title: 'Selecionar Vídeo de Fundo',
+      filters: [{ name: 'Vídeos', extensions: ['mp4', 'wmv', 'avi', 'webm'] }]
+    })
+    if (result) {
+      videoPath.value = result
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 async function handleExport() {
   console.log('[EXPORT] handleExport called')
   saveSettings()
+
+  // Debug: log what videoBackground is after save
+  console.log('[EXPORT] videoBackground after save:', JSON.stringify(projectStore.project.config.videoBackground))
+  console.log('[EXPORT] videoEnabled:', videoEnabled.value)
+  console.log('[EXPORT] videoPath:', videoPath.value)
 
   try {
     // Teste de ping primeiro
@@ -242,6 +329,114 @@ async function handleExport() {
         </div>
       </div>
 
+      <!-- Video Background -->
+      <div class="settings-section">
+        <h3>🎬 Vídeo de Fundo</h3>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="videoEnabled" />
+            <span>Habilitar vídeo de fundo</span>
+          </label>
+          <small class="help-text">O vídeo será exibido atrás de todos os elementos. A imagem de fundo será usada como fallback.</small>
+        </div>
+        
+        <template v-if="videoEnabled">
+          <div class="form-group">
+            <label>Arquivo de Vídeo</label>
+            <div class="input-with-button">
+              <input type="text" v-model="videoPath" placeholder="Nenhum vídeo selecionado" readonly />
+              <button @click="selectVideoFile">Procurar</button>
+            </div>
+            <small class="help-text">Formatos suportados: MP4, WMV, AVI. O vídeo será copiado junto com o patcher.</small>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="videoLoop" />
+                <span>Repetir vídeo</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="videoAutoplay" />
+                <span>Iniciar automaticamente</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="videoMuted" />
+                <span>Sem som</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="videoShowControls" />
+                <span>Mostrar botão Play/Pause</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Control Button Style -->
+          <template v-if="videoShowControls">
+            <h4 class="subsection-title">Estilo do Botão de Controle</h4>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Posição X</label>
+                <input type="number" v-model.number="videoBtnX" min="0" />
+              </div>
+              <div class="form-group">
+                <label>Posição Y</label>
+                <input type="number" v-model.number="videoBtnY" min="0" />
+              </div>
+              <div class="form-group">
+                <label>Tamanho</label>
+                <input type="number" v-model.number="videoBtnSize" min="20" max="200" />
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Cor de Fundo</label>
+                <div class="color-input">
+                  <input type="color" v-model="videoBtnBgColor" />
+                  <input type="text" v-model="videoBtnBgColor" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Cor do Ícone</label>
+                <div class="color-input">
+                  <input type="color" v-model="videoBtnIconColor" />
+                  <input type="text" v-model="videoBtnIconColor" />
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Cor da Borda</label>
+                <div class="color-input">
+                  <input type="color" v-model="videoBtnBorderColor" />
+                  <input type="text" v-model="videoBtnBorderColor" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Largura da Borda</label>
+                <input type="number" v-model.number="videoBtnBorderWidth" min="0" max="10" />
+              </div>
+              <div class="form-group">
+                <label>Opacidade (%)</label>
+                <input type="number" v-model.number="videoBtnOpacity" min="0" max="100" />
+              </div>
+            </div>
+          </template>
+        </template>
+      </div>
+
       <!-- Actions -->
       <div class="settings-actions">
         <button class="btn-secondary" @click="saveSettings">
@@ -409,5 +604,58 @@ h2 {
 .btn-secondary:hover {
   border-color: #6e6e6e;
   background-color: #2a2d2e;
+}
+
+/* Checkbox styling */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #cccccc;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #0e639c;
+  cursor: pointer;
+}
+
+.checkbox-label span {
+  user-select: none;
+}
+
+/* Subsection title */
+.subsection-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9d9d9d;
+  margin: 16px 0 12px 0;
+  padding-top: 12px;
+  border-top: 1px solid #3e3e42;
+}
+
+/* Color input */
+.color-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-input input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  background-color: #3c3c3c;
+  cursor: pointer;
+}
+
+.color-input input[type="text"] {
+  flex: 1;
+  width: auto;
 }
 </style>

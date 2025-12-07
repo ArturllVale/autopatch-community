@@ -674,8 +674,13 @@ namespace autopatch
         }
         graphics.SetClip(&clipRegion);
 
-        // Desenha background
-        if (m_backgroundImage)
+        // Desenha video background se houver e estiver ativo
+        if (m_videoBackground && m_showVideoBackground)
+        {
+            RenderVideoBackground(graphics);
+        }
+        // Desenha background image se não tiver vídeo ou se vídeo estiver pausado/escondido
+        else if (m_backgroundImage)
         {
             graphics.DrawImage(m_backgroundImage.get(), 0, 0, width, height);
         }
@@ -1129,6 +1134,60 @@ namespace autopatch
                 graphics.FillRectangle(&fillBrush, pb.rect.left, pb.rect.top, fillWidth, pbHeight);
             }
         }
+
+        // Desenha botão de controle de vídeo se habilitado
+        if (m_showVideoControls && m_videoBackground)
+        {
+            // Botão circular translúcido
+            int btnSize = m_videoControlRect.right - m_videoControlRect.left;
+            int btnX = m_videoControlRect.left;
+            int btnY = m_videoControlRect.top;
+
+            // Fundo do botão com cor configurada
+            BYTE hoverAlpha = static_cast<BYTE>(std::min(static_cast<int>(m_videoBtnBgColor.GetA()) + 60, 255));
+            Gdiplus::Color btnBg = m_videoControlHover
+                                       ? Gdiplus::Color(hoverAlpha, m_videoBtnBgColor.GetR(), m_videoBtnBgColor.GetG(), m_videoBtnBgColor.GetB())
+                                       : m_videoBtnBgColor;
+            Gdiplus::SolidBrush btnBrush(btnBg);
+            graphics.FillEllipse(&btnBrush, btnX, btnY, btnSize, btnSize);
+
+            // Borda com cor configurada
+            Gdiplus::Pen btnPen(m_videoBtnBorderColor, static_cast<Gdiplus::REAL>(m_videoBtnBorderWidth));
+            graphics.DrawEllipse(&btnPen, btnX, btnY, btnSize, btnSize);
+
+            // Ícone Play ou Pause com cor configurada
+            Gdiplus::SolidBrush iconBrush(m_videoBtnIconColor);
+            int centerX = btnX + btnSize / 2;
+            int centerY = btnY + btnSize / 2;
+
+            // Escala do ícone baseado no tamanho do botão
+            float scale = btnSize / 50.0f;
+            int barWidth = static_cast<int>(5 * scale);
+            int barHeight = static_cast<int>(16 * scale);
+            int gap = static_cast<int>(4 * scale);
+            int triangleSize = static_cast<int>(10 * scale);
+
+            // Mostra Pause se vídeo está visível, Play se está na imagem estática
+            if (m_showVideoBackground)
+            {
+                // Ícone Pause (duas barras)
+                graphics.FillRectangle(&iconBrush,
+                                       centerX - gap - barWidth, centerY - barHeight / 2,
+                                       barWidth, barHeight);
+                graphics.FillRectangle(&iconBrush,
+                                       centerX + gap, centerY - barHeight / 2,
+                                       barWidth, barHeight);
+            }
+            else
+            {
+                // Ícone Play (triângulo)
+                Gdiplus::Point triangle[3];
+                triangle[0] = Gdiplus::Point(centerX - static_cast<int>(6 * scale), centerY - triangleSize);
+                triangle[1] = Gdiplus::Point(centerX - static_cast<int>(6 * scale), centerY + triangleSize);
+                triangle[2] = Gdiplus::Point(centerX + triangleSize, centerY);
+                graphics.FillPolygon(&iconBrush, triangle, 3);
+            }
+        }
     }
 
     bool UI::OnMouseMove(int x, int y)
@@ -1159,11 +1218,33 @@ namespace autopatch
             }
         }
 
+        // Verifica hover no botão de controle de vídeo
+        if (m_showVideoControls && m_videoBackground)
+        {
+            POINT pt = {x, y};
+            bool wasHover = m_videoControlHover;
+            m_videoControlHover = PtInRect(&m_videoControlRect, pt) != 0;
+            if (wasHover != m_videoControlHover)
+            {
+                needsRedraw = true;
+            }
+        }
+
         return needsRedraw;
     }
 
     bool UI::OnMouseDown(int x, int y)
     {
+        // Verifica clique no botão de controle de vídeo
+        if (m_showVideoControls && m_videoBackground)
+        {
+            POINT pt = {x, y};
+            if (PtInRect(&m_videoControlRect, pt))
+            {
+                return true; // Captura o clique
+            }
+        }
+
         UIButton *button = GetButtonAt(x, y);
         if (button && button->enabled)
         {
@@ -1176,6 +1257,17 @@ namespace autopatch
 
     bool UI::OnMouseUp(int x, int y)
     {
+        // Verifica clique no botão de controle de vídeo
+        if (m_showVideoControls && m_videoBackground)
+        {
+            POINT pt = {x, y};
+            if (PtInRect(&m_videoControlRect, pt))
+            {
+                ToggleVideo();
+                return true;
+            }
+        }
+
         if (m_pressedButton)
         {
             UIButton *button = GetButtonAt(x, y);
@@ -1210,9 +1302,19 @@ namespace autopatch
         // Considera área de arrasto onde não há botões
         POINT pt = {x, y};
 
+        // Verifica se está em algum botão normal
         for (const auto &button : m_buttons)
         {
             if (PtInRect(&button.rect, pt))
+            {
+                return false;
+            }
+        }
+
+        // Verifica se está no botão de controle de vídeo
+        if (m_showVideoControls && m_videoBackground)
+        {
+            if (PtInRect(&m_videoControlRect, pt))
             {
                 return false;
             }
@@ -1250,6 +1352,162 @@ namespace autopatch
         default:
             return button.normalImage.get();
         }
+    }
+
+    // ============= Video Background Methods =============
+
+    bool UI::InitializeVideo(HWND hwnd, const std::wstring &url, bool loop, bool autoplay, bool muted, bool showControls,
+                             int btnX, int btnY, int btnSize, const std::string &btnBgColor, const std::string &btnIconColor,
+                             const std::string &btnBorderColor, int btnBorderWidth, int btnOpacity)
+    {
+        m_videoBackground = std::make_unique<VideoBackground>();
+        m_showVideoControls = showControls;
+
+        if (!m_videoBackground->Initialize(hwnd))
+        {
+            m_videoBackground.reset();
+            return false;
+        }
+
+        m_videoBackground->SetLoop(loop);
+        m_videoBackground->SetMuted(muted);
+
+        if (!m_videoBackground->LoadVideo(url))
+        {
+            m_videoBackground.reset();
+            return false;
+        }
+
+        if (autoplay)
+        {
+            m_videoBackground->Play();
+        }
+
+        // Configura o estilo do botão de controle
+        BYTE bgAlpha = static_cast<BYTE>(btnOpacity * 255 / 100);
+        m_videoBtnBgColor = ParseColor(btnBgColor, btnOpacity);
+        m_videoBtnIconColor = ParseColor(btnIconColor, 100);
+        m_videoBtnBorderColor = ParseColor(btnBorderColor, 100);
+        m_videoBtnBorderWidth = btnBorderWidth;
+        m_videoBtnOpacity = btnOpacity;
+
+        // Configura a posição do botão de controle
+        m_videoControlRect = {
+            btnX,           // x
+            btnY,           // y
+            btnX + btnSize, // right
+            btnY + btnSize  // bottom
+        };
+
+        return true;
+    }
+
+    void UI::PlayVideo()
+    {
+        if (m_videoBackground)
+        {
+            m_videoBackground->Play();
+        }
+    }
+
+    void UI::PauseVideo()
+    {
+        if (m_videoBackground)
+        {
+            m_videoBackground->Pause();
+        }
+    }
+
+    void UI::ToggleVideo()
+    {
+        if (m_videoBackground)
+        {
+            // Alterna entre mostrar vídeo e mostrar imagem estática
+            if (m_showVideoBackground)
+            {
+                // Estava mostrando vídeo, pausa e mostra imagem
+                m_videoBackground->Pause();
+                m_showVideoBackground = false;
+            }
+            else
+            {
+                // Estava mostrando imagem, volta a mostrar vídeo e play
+                m_showVideoBackground = true;
+                m_videoBackground->Play();
+            }
+        }
+    }
+
+    bool UI::IsVideoPlaying() const
+    {
+        return m_videoBackground && m_videoBackground->IsPlaying();
+    }
+
+    void UI::ResizeVideo(int width, int height)
+    {
+        // VideoBackground não precisa de resize, apenas atualiza posição do botão
+
+        // Atualiza posição do botão de controle
+        m_videoControlRect = {
+            width - 60,
+            height - 60,
+            width - 10,
+            height - 10};
+    }
+
+    RECT UI::GetVideoControlRect() const
+    {
+        return m_videoControlRect;
+    }
+
+    bool UI::IsInVideoControlArea(int x, int y) const
+    {
+        if (!m_showVideoControls || !m_videoBackground)
+            return false;
+
+        POINT pt = {x, y};
+        return PtInRect(&m_videoControlRect, pt) != 0;
+    }
+
+    Gdiplus::Color UI::ParseColor(const std::string &hex, int opacity)
+    {
+        // Parse hex color string like "#RRGGBB" or "#RGB"
+        std::string color = hex;
+        if (!color.empty() && color[0] == '#')
+        {
+            color = color.substr(1);
+        }
+
+        BYTE r = 0, g = 0, b = 0;
+        BYTE a = static_cast<BYTE>(opacity * 255 / 100);
+
+        if (color.length() == 6)
+        {
+            r = static_cast<BYTE>(std::stoul(color.substr(0, 2), nullptr, 16));
+            g = static_cast<BYTE>(std::stoul(color.substr(2, 2), nullptr, 16));
+            b = static_cast<BYTE>(std::stoul(color.substr(4, 2), nullptr, 16));
+        }
+        else if (color.length() == 3)
+        {
+            r = static_cast<BYTE>(std::stoul(color.substr(0, 1) + color.substr(0, 1), nullptr, 16));
+            g = static_cast<BYTE>(std::stoul(color.substr(1, 1) + color.substr(1, 1), nullptr, 16));
+            b = static_cast<BYTE>(std::stoul(color.substr(2, 1) + color.substr(2, 1), nullptr, 16));
+        }
+
+        return Gdiplus::Color(a, r, g, b);
+    }
+
+    void UI::RenderVideoBackground(Gdiplus::Graphics &g)
+    {
+        if (!m_videoBackground)
+            return;
+
+        Gdiplus::Bitmap *frame = m_videoBackground->GetCurrentFrame();
+        if (!frame)
+            return;
+
+        // Desenha o frame do vídeo esticado para preencher a janela
+        g.DrawImage(frame, 0, 0, m_windowWidth, m_windowHeight);
     }
 
 } // namespace autopatch

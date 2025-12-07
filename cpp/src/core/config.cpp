@@ -358,6 +358,32 @@ namespace autopatch
                     config.imageMode->progressBar.backgroundColor = pb.value("backgroundColor", "#333333");
                     config.imageMode->progressBar.fillColor = pb.value("fillColor", "#00FF00");
                 }
+
+                // Video background do novo formato
+                if (j.contains("videoBackground"))
+                {
+                    auto &vb = j["videoBackground"];
+                    config.imageMode->videoBackground.enabled = vb.value("enabled", false);
+                    config.imageMode->videoBackground.videoFile = vb.value("videoFile", "");
+                    config.imageMode->videoBackground.loop = vb.value("loop", true);
+                    config.imageMode->videoBackground.autoplay = vb.value("autoplay", true);
+                    config.imageMode->videoBackground.muted = vb.value("muted", true);
+                    config.imageMode->videoBackground.showControls = vb.value("showControls", false);
+
+                    // Control button style
+                    if (vb.contains("controlButton"))
+                    {
+                        auto &cb = vb["controlButton"];
+                        config.imageMode->videoBackground.controlButton.x = cb.value("x", 740);
+                        config.imageMode->videoBackground.controlButton.y = cb.value("y", 550);
+                        config.imageMode->videoBackground.controlButton.size = cb.value("size", 50);
+                        config.imageMode->videoBackground.controlButton.backgroundColor = cb.value("backgroundColor", "#000000");
+                        config.imageMode->videoBackground.controlButton.iconColor = cb.value("iconColor", "#ffffff");
+                        config.imageMode->videoBackground.controlButton.borderColor = cb.value("borderColor", "#ffffff");
+                        config.imageMode->videoBackground.controlButton.borderWidth = cb.value("borderWidth", 2);
+                        config.imageMode->videoBackground.controlButton.opacity = cb.value("opacity", 50);
+                    }
+                }
             }
             // FORMATO ANTIGO: imageMode object
             else if (j.contains("imageMode") && !j["imageMode"].is_null())
