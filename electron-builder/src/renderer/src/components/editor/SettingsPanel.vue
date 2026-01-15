@@ -46,7 +46,7 @@ function loadVideoSettings() {
   videoAutoplay.value = vb?.autoplay ?? true
   videoMuted.value = vb?.muted ?? true
   videoShowControls.value = vb?.showControls ?? false
-  
+
   // Control button style
   const btn = vb?.controlButton
   videoBtnX.value = btn?.x ?? 740
@@ -158,7 +158,7 @@ async function handleExport() {
     console.log('[EXPORT] Testing ping...')
     const pingResult = await window.electron.ipcRenderer.invoke('test:ping')
     console.log('[EXPORT] Ping result:', pingResult)
-    
+
     // Apenas pedir o caminho de saída do EXE
     console.log('[EXPORT] Opening save dialog...')
     const outputPath = await window.electron.ipcRenderer.invoke('dialog:save-file', {
@@ -179,7 +179,7 @@ async function handleExport() {
     // Preparar configuração completa para o patcher
     // Use JSON.parse/stringify to create a plain object (remove Vue reactivity)
     const patcherConfig = JSON.parse(JSON.stringify(projectStore.project.config))
-    
+
     // Converter imagem de fundo para base64
     if (patcherConfig.backgroundImagePath) {
       try {
@@ -191,7 +191,7 @@ async function handleExport() {
         console.error('[EXPORT] Failed to convert background:', e)
       }
     }
-    
+
     // Converter imagens dos elementos para base64
     for (const element of patcherConfig.elements) {
       if (element.type === 'image' && element.backgroundImage) {
@@ -204,7 +204,7 @@ async function handleExport() {
           console.error('[EXPORT] Failed to convert element image:', element.id, e)
         }
       }
-      
+
       // Converter imagens de estados de botões
       if (element.type === 'button' && element.states) {
         for (const stateName of ['normal', 'hover', 'pressed', 'disabled']) {
@@ -221,7 +221,7 @@ async function handleExport() {
         }
       }
     }
-    
+
     console.log('[EXPORT] Config prepared:', JSON.stringify(patcherConfig).substring(0, 200))
 
     uiStore.setStatus(t('status.generatingPatcher'))
@@ -268,6 +268,16 @@ async function handleExport() {
 
 <template>
   <div class="settings-panel">
+    <!-- Header with back button -->
+    <div class="settings-header">
+      <button class="back-btn" @click="uiStore.setActiveTab('design')">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        Voltar ao Editor
+      </button>
+    </div>
+
     <div class="settings-content">
       <h2>{{ t('settings.projectSettings') }}</h2>
 
@@ -341,7 +351,7 @@ async function handleExport() {
           </label>
           <small class="help-text">{{ t('settings.videoHelp') }}</small>
         </div>
-        
+
         <template v-if="videoEnabled">
           <div class="form-group">
             <label>{{ t('settings.videoFile') }}</label>
@@ -351,7 +361,7 @@ async function handleExport() {
             </div>
             <small class="help-text">{{ t('settings.videoFormats') }}</small>
           </div>
-          
+
           <div class="form-row">
             <div class="form-group">
               <label class="checkbox-label">
@@ -366,7 +376,7 @@ async function handleExport() {
               </label>
             </div>
           </div>
-          
+
           <div class="form-row">
             <div class="form-group">
               <label class="checkbox-label">
@@ -381,11 +391,11 @@ async function handleExport() {
               </label>
             </div>
           </div>
-          
+
           <!-- Control Button Style -->
           <template v-if="videoShowControls">
             <h4 class="subsection-title">{{ t('settings.controlButtonStyle') }}</h4>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label>{{ t('settings.positionX') }}</label>
@@ -400,7 +410,7 @@ async function handleExport() {
                 <input type="number" v-model.number="videoBtnSize" min="20" max="200" />
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label>{{ t('settings.backgroundColor') }}</label>
@@ -417,7 +427,7 @@ async function handleExport() {
                 </div>
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group">
                 <label>{{ t('settings.borderColor') }}</label>
@@ -458,6 +468,40 @@ async function handleExport() {
   flex: 1;
   overflow-y: auto;
   background-color: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-header {
+  padding: 12px 16px;
+  background-color: #252526;
+  border-bottom: 1px solid #3e3e42;
+  flex-shrink: 0;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #2d2d30;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  color: #cccccc;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.back-btn:hover {
+  background-color: #3e3e42;
+  color: #ffffff;
+  border-color: #0078d4;
+}
+
+.back-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .settings-content {

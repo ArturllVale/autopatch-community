@@ -10,7 +10,6 @@ const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUiStore()
 
-const canvasRef = ref<HTMLDivElement | null>(null)
 const isDragging = ref(false)
 const dragElement = ref<UIElement | null>(null)
 const dragStartX = ref(0)
@@ -18,12 +17,29 @@ const dragStartY = ref(0)
 const elementStartX = ref(0)
 const elementStartY = ref(0)
 
+// Element resize state
+const isResizing = ref(false)
+const resizeElement = ref<UIElement | null>(null)
+const resizeHandle = ref<string>('')
+const resizeStartX = ref(0)
+const resizeStartY = ref(0)
+const elementStartWidth = ref(0)
+const elementStartHeight = ref(0)
+
 // Progress bar drag state
 const isDraggingProgressBar = ref(false)
 const progressBarStartX = ref(0)
 const progressBarStartY = ref(0)
 const progressBarElementStartX = ref(0)
 const progressBarElementStartY = ref(0)
+
+// Progress bar resize state
+const isResizingProgressBar = ref(false)
+const resizeProgressBarHandle = ref<string>('')
+const resizeProgressBarStartX = ref(0)
+const resizeProgressBarStartY = ref(0)
+const progressBarStartWidth = ref(0)
+const progressBarStartHeight = ref(0)
 
 // Video control button drag state
 const isDraggingVideoBtn = ref(false)
@@ -50,7 +66,7 @@ async function loadBackgroundImage(path: string) {
     console.log('[BG DEBUG] Received data:', data ? `${data.length} chars` : 'null')
     if (data) {
       const ext = path.split('.').pop()?.toLowerCase() || 'png'
-      const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 
+      const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
                        ext === 'bmp' ? 'image/bmp' : 'image/png'
       backgroundDataUrl.value = `data:${mimeType};base64,${data}`
       console.log('[BG DEBUG] Set backgroundDataUrl, length:', backgroundDataUrl.value.length)
@@ -73,7 +89,7 @@ async function loadElementImage(elementId: string, path: string) {
     const data = await window.electron.ipcRenderer.invoke('file:read-binary', path)
     if (data) {
       const ext = path.split('.').pop()?.toLowerCase() || 'png'
-      const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 
+      const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
                        ext === 'bmp' ? 'image/bmp' : 'image/png'
       elementImageCache.value[elementId] = `data:${mimeType};base64,${data}`
     }
@@ -151,13 +167,16 @@ const combinedCanvasStyle = computed(() => {
   // Grid
   if (uiStore.showGrid) {
     const size = uiStore.gridSize
-    const gridBg = `linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)`
+    const gridBg = `linear-gradient(to right, rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.15) 1px, transparent 1px)`
     if (base.backgroundImage) {
-      base.backgroundImage = base.backgroundImage + ', ' + gridBg
-      base.backgroundSize = 'cover, ' + `${size}px ${size}px, ${size}px ${size}px`
+      // Grid must come FIRST to be on top of background image
+      base.backgroundImage = gridBg + ', ' + base.backgroundImage
+      base.backgroundSize = `${size}px ${size}px, ${size}px ${size}px, cover`
+      base.backgroundPosition = `0 0, 0 0, center`
     } else {
       base.backgroundImage = gridBg
       base.backgroundSize = `${size}px ${size}px, ${size}px ${size}px`
+      base.backgroundPosition = `0 0, 0 0`
     }
   }
 
@@ -174,13 +193,13 @@ function getElementStyle(element: UIElement) {
     zIndex: `${element.zIndex || 0}`
   }
 
-  // Button specific styles - use state colors
+  // Button specific styles - use state colors (default values)
   if (element.type === 'button') {
     const normalState = element.states?.normal
     const bgColor = normalState?.backgroundColor || element.backgroundColor || '#0078d4'
     const textColor = normalState?.fontColor || element.fontColor || '#ffffff'
     const borderColor = normalState?.borderColor || element.borderColor || '#005a9e'
-    
+
     baseStyle.backgroundColor = bgColor
     baseStyle.color = textColor
     baseStyle.borderColor = borderColor
@@ -227,7 +246,7 @@ function getElementStyle(element: UIElement) {
     baseStyle.borderRadius = `${borderRadius || 8}px`
   }
 
-  // Text styles
+  // Text styles (applied after button defaults so custom values override)
   if (element.fontColor) {
     baseStyle.color = element.fontColor
   }
@@ -243,29 +262,29 @@ function getElementStyle(element: UIElement) {
   if (element.fontItalic) {
     baseStyle.fontStyle = 'italic'
   }
-  
+
   // Text alignment
   if (element.textAlign) {
     baseStyle.textAlign = element.textAlign
-    baseStyle.justifyContent = element.textAlign === 'left' ? 'flex-start' : 
+    baseStyle.justifyContent = element.textAlign === 'left' ? 'flex-start' :
                                element.textAlign === 'right' ? 'flex-end' : 'center'
   }
   if (element.textVerticalAlign) {
-    baseStyle.alignItems = element.textVerticalAlign === 'top' ? 'flex-start' : 
+    baseStyle.alignItems = element.textVerticalAlign === 'top' ? 'flex-start' :
                            element.textVerticalAlign === 'bottom' ? 'flex-end' : 'center'
   }
 
   // Effects
   if (element.effects) {
     const { opacity, borderRadius, shadow, glow } = element.effects
-    
+
     if (opacity !== undefined && element.type !== 'box') {
       baseStyle.opacity = `${opacity / 100}`
     }
     if (borderRadius !== undefined) {
       baseStyle.borderRadius = `${borderRadius}px`
     }
-    
+
     // Shadow and glow
     const shadows: string[] = []
     if (shadow?.enabled) {
@@ -310,7 +329,7 @@ function startDrag(element: UIElement, event: MouseEvent) {
   projectStore.selectElement(element.id)
   uiStore.selectProgressBar(false)
   uiStore.selectVideoButton(false)
-  
+
   isDragging.value = true
   dragElement.value = element
   dragStartX.value = event.clientX
@@ -320,6 +339,108 @@ function startDrag(element: UIElement, event: MouseEvent) {
 }
 
 function onMouseMove(event: MouseEvent) {
+  // Handle element resizing
+  if (isResizing.value && resizeElement.value) {
+    const dx = (event.clientX - resizeStartX.value) / uiStore.canvasZoom
+    const dy = (event.clientY - resizeStartY.value) / uiStore.canvasZoom
+
+    let newWidth = elementStartWidth.value
+    let newHeight = elementStartHeight.value
+    let newX = resizeElement.value.x
+    let newY = resizeElement.value.y
+
+    const handle = resizeHandle.value
+    if (handle.includes('e')) { // East
+      newWidth = elementStartWidth.value + dx
+    }
+    if (handle.includes('w')) { // West
+      newWidth = elementStartWidth.value - dx
+      newX = elementStartX.value + dx
+    }
+    if (handle.includes('s')) { // South
+      newHeight = elementStartHeight.value + dy
+    }
+    if (handle.includes('n')) { // North
+      newHeight = elementStartHeight.value - dy
+      newY = elementStartY.value + dy
+    }
+
+    // Ensure minimum size
+    newWidth = Math.max(20, newWidth)
+    newHeight = Math.max(20, newHeight)
+
+    // Adjust position if size was clamped
+    if (handle.includes('w') && newWidth === 20) {
+      newX = resizeElement.value.x + resizeElement.value.width - 20
+    }
+    if (handle.includes('n') && newHeight === 20) {
+      newY = resizeElement.value.y + resizeElement.value.height - 20
+    }
+
+    // Snap to grid
+    if (uiStore.snapToGrid) {
+      newWidth = Math.round(newWidth / uiStore.gridSize) * uiStore.gridSize
+      newHeight = Math.round(newHeight / uiStore.gridSize) * uiStore.gridSize
+      newX = Math.round(newX / uiStore.gridSize) * uiStore.gridSize
+      newY = Math.round(newY / uiStore.gridSize) * uiStore.gridSize
+    }
+
+    // Update element
+    projectStore.moveElement(resizeElement.value.id, newX, newY)
+    projectStore.resizeElement(resizeElement.value.id, newWidth, newHeight)
+    return
+  }
+
+  // Handle progress bar resizing
+  if (isResizingProgressBar.value) {
+    const dx = (event.clientX - resizeProgressBarStartX.value) / uiStore.canvasZoom
+    const dy = (event.clientY - resizeProgressBarStartY.value) / uiStore.canvasZoom
+
+    let newWidth = progressBarStartWidth.value
+    let newHeight = progressBarStartHeight.value
+    let newX = projectStore.project.config.progressBar.x
+    let newY = projectStore.project.config.progressBar.y
+
+    const handle = resizeProgressBarHandle.value
+    if (handle.includes('e')) {
+      newWidth = progressBarStartWidth.value + dx
+    }
+    if (handle.includes('w')) {
+      newWidth = progressBarStartWidth.value - dx
+      newX = progressBarElementStartX.value + dx
+    }
+    if (handle.includes('s')) {
+      newHeight = progressBarStartHeight.value + dy
+    }
+    if (handle.includes('n')) {
+      newHeight = progressBarStartHeight.value - dy
+      newY = progressBarElementStartY.value + dy
+    }
+
+    // Ensure minimum size
+    newWidth = Math.max(50, newWidth)
+    newHeight = Math.max(10, newHeight)
+
+    // Adjust position if size was clamped
+    if (handle.includes('w') && newWidth === 50) {
+      newX = progressBarElementStartX.value + progressBarStartWidth.value - 50
+    }
+    if (handle.includes('n') && newHeight === 10) {
+      newY = progressBarElementStartY.value + progressBarStartHeight.value - 10
+    }
+
+    // Snap to grid
+    if (uiStore.snapToGrid) {
+      newWidth = Math.round(newWidth / uiStore.gridSize) * uiStore.gridSize
+      newHeight = Math.round(newHeight / uiStore.gridSize) * uiStore.gridSize
+      newX = Math.round(newX / uiStore.gridSize) * uiStore.gridSize
+      newY = Math.round(newY / uiStore.gridSize) * uiStore.gridSize
+    }
+
+    projectStore.updateProgressBar({ x: newX, y: newY, width: newWidth, height: newHeight })
+    return
+  }
+
   // Handle element dragging
   if (isDragging.value && dragElement.value) {
     const dx = (event.clientX - dragStartX.value) / uiStore.canvasZoom
@@ -396,7 +517,10 @@ function onMouseMove(event: MouseEvent) {
 function onMouseUp() {
   isDragging.value = false
   dragElement.value = null
+  isResizing.value = false
+  resizeElement.value = null
   isDraggingProgressBar.value = false
+  isResizingProgressBar.value = false
   isDraggingVideoBtn.value = false
 }
 
@@ -410,12 +534,12 @@ function clearSelection() {
 function startDragProgressBar(event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
-  
+
   // Deselect elements and select progress bar
   projectStore.selectElement(null)
   uiStore.selectProgressBar(true)
   uiStore.selectVideoButton(false)
-  
+
   isDraggingProgressBar.value = true
   progressBarStartX.value = event.clientX
   progressBarStartY.value = event.clientY
@@ -428,6 +552,45 @@ function selectProgressBar(event: MouseEvent) {
   projectStore.selectElement(null)
   uiStore.selectProgressBar(true)
   uiStore.selectVideoButton(false)
+}
+
+// Resize handlers for elements
+function startResizeElement(element: UIElement, handle: string, event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  projectStore.selectElement(element.id)
+  uiStore.selectProgressBar(false)
+  uiStore.selectVideoButton(false)
+
+  isResizing.value = true
+  resizeElement.value = element
+  resizeHandle.value = handle
+  resizeStartX.value = event.clientX
+  resizeStartY.value = event.clientY
+  elementStartX.value = element.x
+  elementStartY.value = element.y
+  elementStartWidth.value = element.width
+  elementStartHeight.value = element.height
+}
+
+// Resize handlers for progress bar
+function startResizeProgressBar(handle: string, event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  projectStore.selectElement(null)
+  uiStore.selectProgressBar(true)
+  uiStore.selectVideoButton(false)
+
+  isResizingProgressBar.value = true
+  resizeProgressBarHandle.value = handle
+  resizeProgressBarStartX.value = event.clientX
+  resizeProgressBarStartY.value = event.clientY
+  progressBarElementStartX.value = projectStore.project.config.progressBar.x
+  progressBarElementStartY.value = projectStore.project.config.progressBar.y
+  progressBarStartWidth.value = projectStore.project.config.progressBar.width
+  progressBarStartHeight.value = projectStore.project.config.progressBar.height
 }
 
 // Video button config computed
@@ -466,11 +629,11 @@ const videoBtnStyle = computed(() => {
 function startDragVideoBtn(event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
-  
+
   projectStore.selectElement(null)
   uiStore.selectProgressBar(false)
   uiStore.selectVideoButton(true)
-  
+
   isDraggingVideoBtn.value = true
   videoBtnStartX.value = event.clientX
   videoBtnStartY.value = event.clientY
@@ -504,11 +667,11 @@ function getElementLabel(element: UIElement) {
   const name = element.name || ''
   switch (element.type) {
     case 'button':
-      return name || element.text || 'Botão'
+      return element.text || name || 'Botão'
     case 'status':
-      return '📝 ' + (name || element.text || 'Status')
+      return '📝 ' + (element.text || name || 'Status')
     case 'percentage':
-      return '% ' + (name || element.text || '100%')
+      return '% ' + (element.text || name || '100%')
     case 'box':
       return '📦 ' + (name || 'Box')
     case 'image':
@@ -516,7 +679,7 @@ function getElementLabel(element: UIElement) {
     case 'webview':
       return '🌐 ' + (name || element.webviewConfig?.url || 'WebView')
     default:
-      return name || element.text || 'Label'
+      return element.text || name || 'Label'
   }
 }
 
@@ -533,7 +696,7 @@ function handleKeyDown(event: KeyboardEvent) {
     // Don't delete if user is typing in an input
     const target = event.target as HTMLElement
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
-    
+
     if (projectStore.selectedElementId) {
       event.preventDefault()
       deleteSelectedElement()
@@ -558,6 +721,22 @@ function handleSizePreset(event: Event) {
   (event.target as HTMLSelectElement).value = ''
 }
 
+// Check if canvas content fits in container (for hiding scrollbars)
+const canvasContainerClass = computed(() => {
+  const scaledWidth = projectStore.project.config.windowWidth * uiStore.canvasZoom
+  const scaledHeight = projectStore.project.config.windowHeight * uiStore.canvasZoom
+  // Assume container has 80px padding (40px on each side)
+  const padding = 80
+  // We can't access actual container dimensions easily, so use a heuristic
+  // If zoom <= 1, content will often fit, but we check conservatively
+  const fitsHorizontally = scaledWidth + padding <= window.innerWidth - 400 // Account for sidebars
+  const fitsVertically = scaledHeight + padding <= window.innerHeight - 200 // Account for toolbars
+  return {
+    'canvas-container': true,
+    'hide-scrollbars': fitsHorizontally && fitsVertically
+  }
+})
+
 onMounted(() => {
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', onMouseUp)
@@ -579,31 +758,31 @@ onUnmounted(() => {
     <!-- Tabs and Size Controls -->
     <div class="canvas-tabs">
       <span class="tab-title">🎨 {{ t('canvas.designEditor') }}</span>
-      
+
       <!-- Patcher Size Controls -->
       <div class="size-controls">
         <span class="size-label">{{ t('canvas.windowSize') }}:</span>
-        <input 
-          type="number" 
+        <input
+          type="number"
           class="size-input"
-          :value="projectStore.project.config.windowWidth" 
+          :value="projectStore.project.config.windowWidth"
           @input="projectStore.setWindowSize(Number(($event.target as HTMLInputElement).value), projectStore.project.config.windowHeight)"
-          min="400" 
+          min="400"
           max="1920"
           :title="t('settings.width')"
         />
         <span class="size-x">×</span>
-        <input 
-          type="number" 
+        <input
+          type="number"
           class="size-input"
-          :value="projectStore.project.config.windowHeight" 
+          :value="projectStore.project.config.windowHeight"
           @input="projectStore.setWindowSize(projectStore.project.config.windowWidth, Number(($event.target as HTMLInputElement).value))"
-          min="300" 
+          min="300"
           max="1080"
           :title="t('settings.height')"
         />
         <span class="size-unit">px</span>
-        
+
         <!-- Preset sizes -->
         <select class="size-preset" @change="handleSizePreset($event)" :title="t('canvas.presets')">
           <option value="">{{ t('canvas.presets') }}</option>
@@ -612,24 +791,24 @@ onUnmounted(() => {
           <option value="640x480">640×480</option>
           <option value="600x400">600×400</option>
         </select>
-        
+
         <!-- Border Radius Control -->
         <span class="size-separator">|</span>
         <span class="size-label">{{ t('canvas.borderRadius') }}:</span>
-        <input 
-          type="number" 
+        <input
+          type="number"
           class="size-input radius-input"
-          :value="projectStore.project.config.windowBorderRadius" 
+          :value="projectStore.project.config.windowBorderRadius"
           @input="projectStore.setWindowBorderRadius(Number(($event.target as HTMLInputElement).value))"
-          min="0" 
+          min="0"
           max="200"
           :title="t('properties.borderRadius')"
         />
         <span class="size-unit">px</span>
       </div>
-      
+
       <!-- Delete button (only when there's a selection) -->
-      <button 
+      <button
         v-if="projectStore.selectedElementId"
         class="delete-btn"
         @click="deleteSelectedElement"
@@ -640,10 +819,9 @@ onUnmounted(() => {
     </div>
 
     <!-- Design View -->
-    <div class="canvas-container" @click="clearSelection">
+    <div :class="canvasContainerClass" @click="clearSelection">
       <div class="canvas-scroll">
         <div
-          ref="canvasRef"
           class="design-canvas"
           :style="combinedCanvasStyle"
         >
@@ -660,10 +838,10 @@ onUnmounted(() => {
 
             <!-- Resize handles (only for selected) -->
             <template v-if="element.id === projectStore.selectedElementId">
-              <div class="resize-handle nw"></div>
-              <div class="resize-handle ne"></div>
-              <div class="resize-handle sw"></div>
-              <div class="resize-handle se"></div>
+              <div class="resize-handle nw" @mousedown="startResizeElement(element, 'nw', $event)"></div>
+              <div class="resize-handle ne" @mousedown="startResizeElement(element, 'ne', $event)"></div>
+              <div class="resize-handle sw" @mousedown="startResizeElement(element, 'sw', $event)"></div>
+              <div class="resize-handle se" @mousedown="startResizeElement(element, 'se', $event)"></div>
             </template>
           </div>
 
@@ -689,13 +867,13 @@ onUnmounted(() => {
               }"
             ></div>
             <span class="progress-label">📊 {{ t('elements.progressBar') }}</span>
-            
+
             <!-- Resize handles for progress bar (only when selected) -->
             <template v-if="uiStore.isProgressBarSelected">
-              <div class="resize-handle nw"></div>
-              <div class="resize-handle ne"></div>
-              <div class="resize-handle sw"></div>
-              <div class="resize-handle se"></div>
+              <div class="resize-handle nw" @mousedown="startResizeProgressBar('nw', $event)"></div>
+              <div class="resize-handle ne" @mousedown="startResizeProgressBar('ne', $event)"></div>
+              <div class="resize-handle sw" @mousedown="startResizeProgressBar('sw', $event)"></div>
+              <div class="resize-handle se" @mousedown="startResizeProgressBar('se', $event)"></div>
             </template>
           </div>
 
@@ -835,6 +1013,10 @@ onUnmounted(() => {
   padding: 40px;
 }
 
+.canvas-container.hide-scrollbars {
+  overflow: hidden;
+}
+
 .canvas-scroll {
   display: inline-block;
 }
@@ -844,9 +1026,6 @@ onUnmounted(() => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   border: 1px solid #3e3e42;
   background-color: #2d2d30;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
 }
 
 .canvas-element {
@@ -868,30 +1047,23 @@ onUnmounted(() => {
   box-shadow: 0 0 0 2px #0078d4;
 }
 
-/* Button elements preserve their styled border */
-.element-button {
-  /* Styles come from getElementStyle */
-}
-
+/* Button elements preserve their styled border - styles come from getElementStyle */
 .element-button:hover {
   filter: brightness(1.1);
 }
 
 .element-label {
   background-color: transparent;
-  color: white;
   border: 1px dashed rgba(255, 255, 255, 0.3);
 }
 
 .element-status {
   background-color: rgba(0, 255, 128, 0.1);
-  color: #00ff80;
   border: 1px dashed #00ff80;
 }
 
 .element-percentage {
   background-color: rgba(255, 200, 0, 0.1);
-  color: #ffcc00;
   border: 1px dashed #ffcc00;
 }
 
@@ -944,7 +1116,6 @@ onUnmounted(() => {
 }
 
 .element-label {
-  font-size: 12px;
   pointer-events: none;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }

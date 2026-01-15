@@ -54,7 +54,7 @@ function updateProperty(key: string, value: any) {
 function updateNestedProperty(parent: string, key: string, value: any) {
   if (element.value) {
     const current = (element.value as any)[parent] || {}
-    projectStore.updateElement(element.value.id, { 
+    projectStore.updateElement(element.value.id, {
       [parent]: { ...current, [key]: value }
     })
   }
@@ -64,9 +64,9 @@ function updateStateProperty(state: string, key: string, value: any) {
   if (element.value) {
     const states = element.value.states || {}
     const currentState = (states as any)[state] || {}
-    projectStore.updateElement(element.value.id, { 
-      states: { 
-        ...states, 
+    projectStore.updateElement(element.value.id, {
+      states: {
+        ...states,
         [state]: { ...currentState, [key]: value }
       }
     })
@@ -77,9 +77,9 @@ function updateEffectProperty(effect: string, key: string, value: any) {
   if (element.value) {
     const effects = element.value.effects || {}
     const currentEffect = (effects as any)[effect] || {}
-    projectStore.updateElement(element.value.id, { 
-      effects: { 
-        ...effects, 
+    projectStore.updateElement(element.value.id, {
+      effects: {
+        ...effects,
         [effect]: { ...currentEffect, [key]: value }
       }
     })
@@ -95,7 +95,7 @@ function updateBoxStyle(key: string, value: any) {
       borderWidth: 1,
       borderRadius: 8
     }
-    projectStore.updateElement(element.value.id, { 
+    projectStore.updateElement(element.value.id, {
       boxStyle: { ...boxStyle, [key]: value }
     })
   }
@@ -110,7 +110,7 @@ function updateWebviewConfig(key: string, value: any) {
       borderWidth: 1,
       backgroundColor: '#1e1e1e'
     }
-    projectStore.updateElement(element.value.id, { 
+    projectStore.updateElement(element.value.id, {
       webviewConfig: { ...webviewConfig, [key]: value }
     })
   }
@@ -233,7 +233,12 @@ function getTypeIcon(type: string) {
 }
 
 function getLayerElementName(el: any) {
-  return el.name || el.text || `${el.type} ${el.id.slice(-4)}`
+  // For elements with text content, show text first
+  if (el.type === 'button' || el.type === 'label' || el.type === 'status' || el.type === 'percentage') {
+    return el.text || el.name || `${el.type} ${el.id.slice(-4)}`
+  }
+  // For other elements, show name or type
+  return el.name || `${el.type} ${el.id.slice(-4)}`
 }
 
 async function selectStateImage(state: string) {
@@ -394,16 +399,31 @@ function getGlowValue(key: string, defaultValue: any = '') {
             class="full-width"
             :placeholder="t('properties.elementText')"
           />
-          
+
           <!-- Font settings -->
           <div class="property-row mt-8">
             <label class="flex-2">
               <span>{{ t('properties.font') }}</span>
-              <input
-                type="text"
+              <select
                 :value="element.fontName || 'Segoe UI'"
-                @input="updateProperty('fontName', ($event.target as HTMLInputElement).value)"
-              />
+                @change="updateProperty('fontName', ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="Segoe UI">Segoe UI</option>
+                <option value="Arial">Arial</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Tahoma">Tahoma</option>
+                <option value="Trebuchet MS">Trebuchet MS</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Garamond">Garamond</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Monaco">Monaco</option>
+                <option value="Comic Sans MS">Comic Sans MS</option>
+                <option value="Impact">Impact</option>
+                <option value="Lucida Sans">Lucida Sans</option>
+                <option value="Palatino">Palatino</option>
+              </select>
             </label>
             <label class="flex-1">
               <span>{{ t('properties.size') }}</span>
@@ -416,7 +436,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
           </div>
-          
+
           <div class="property-row">
             <label class="checkbox-label">
               <input
@@ -443,7 +463,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
           </div>
-          
+
           <!-- Text alignment -->
           <div class="property-row">
             <label>
@@ -488,16 +508,16 @@ function getGlowValue(key: string, defaultValue: any = '') {
         <!-- Button States (for buttons only) -->
         <div v-if="element.type === 'button'" class="property-section">
           <div class="section-title">🎨 {{ t('properties.buttonStates') }}</div>
-          
+
           <div class="state-tabs">
-            <button 
-              v-for="state in ['normal', 'hover', 'pressed', 'disabled']" 
+            <button
+              v-for="state in ['normal', 'hover', 'pressed', 'disabled']"
               :key="state"
               :class="['state-tab', { active: activeStateTab === state }]"
               @click="activeStateTab = state as any"
             >
-              {{ state === 'normal' ? t('properties.stateNormalEmoji') : 
-                 state === 'hover' ? t('properties.stateHoverEmoji') : 
+              {{ state === 'normal' ? t('properties.stateNormalEmoji') :
+                 state === 'hover' ? t('properties.stateHoverEmoji') :
                  state === 'pressed' ? t('properties.statePressedEmoji') : t('properties.stateDisabledEmoji') }}
             </button>
           </div>
@@ -586,7 +606,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
         <!-- Box Style (for box only) -->
         <div v-if="element.type === 'box'" class="property-section">
           <div class="section-title">📦 {{ t('properties.boxStyle') }}</div>
-          
+
           <div class="property-row">
             <label>
               <span>{{ t('properties.fillColor') }}</span>
@@ -607,7 +627,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
             </label>
           </div>
-          
+
           <div class="property-row">
             <label>
               <span>{{ t('properties.borderColor') }}</span>
@@ -716,7 +736,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
         <!-- Effects (all elements) -->
         <div class="property-section">
           <div class="section-title">✨ {{ t('properties.effects') }}</div>
-          
+
           <!-- Opacity -->
           <div class="property-row">
             <label class="full-width">
@@ -755,7 +775,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
               <span>{{ t('properties.shadowLabel') }}</span>
             </label>
-            
+
             <div v-if="getShadowValue('enabled', false)" class="effect-details">
               <div class="property-row">
                 <label>
@@ -808,7 +828,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
               />
               <span>{{ t('properties.glowLabel') }}</span>
             </label>
-            
+
             <div v-if="getGlowValue('enabled', false)" class="effect-details">
               <div class="property-row">
                 <label>
@@ -903,7 +923,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
       <!-- Video Button Section -->
       <div :class="['property-section', 'video-section', { 'video-selected': uiStore.isVideoButtonSelected }]">
         <div class="section-title">🎬 {{ t('properties.videoBackground') }}</div>
-        
+
         <!-- Enable Video -->
         <div class="property-row">
           <label class="checkbox-label full-width">
@@ -964,7 +984,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
         <!-- Control Button Properties (only shown when video enabled and controls shown) -->
         <template v-if="videoConfig?.enabled && videoConfig?.showControls">
           <div class="subsection-title">▶ {{ t('properties.playPauseButton') }}</div>
-          
+
           <!-- Position -->
           <div class="property-grid-4">
             <label>
@@ -1063,7 +1083,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
           v-for="layerEl in sortedElements"
           :key="layerEl.id"
           class="layer-item"
-          :class="{ 
+          :class="{
             selected: projectStore.selectedElement?.id === layerEl.id,
             hidden: layerEl.visible === false,
             locked: layerEl.locked

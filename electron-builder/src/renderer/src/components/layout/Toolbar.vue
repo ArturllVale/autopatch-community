@@ -57,46 +57,52 @@ function sendToBack() {
 
 <template>
   <div class="toolbar">
-    <!-- Left: Element Tools -->
+    <!-- Add Elements -->
     <div class="toolbar-group">
       <span class="group-label">{{ $t('common.add') }}:</span>
       <button class="tool-btn" @click="addElement('button')" :title="$t('tooltips.addButton')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z"/></svg>
-        {{ $t('toolbar.addButton') }}
+        <span class="btn-label">{{ $t('toolbar.addButton') }}</span>
       </button>
       <button class="tool-btn" @click="addElement('label')" :title="$t('tooltips.addLabel')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>
-        {{ $t('toolbar.addLabel') }}
+        <span class="btn-label">{{ $t('toolbar.addLabel') }}</span>
       </button>
       <button class="tool-btn" @click="addElement('box')" :title="$t('tooltips.addBox')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/><path d="M7 7h10v10H7z" fill-opacity="0.3"/></svg>
-        {{ $t('toolbar.addBox') }}
+        <span class="btn-label">{{ $t('toolbar.addBox') }}</span>
       </button>
       <button class="tool-btn" @click="addElement('image')" :title="$t('tooltips.addImage')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-        {{ $t('toolbar.addImage') }}
+        <span class="btn-label">{{ $t('toolbar.addImage') }}</span>
       </button>
       <button class="tool-btn" @click="addElement('webview')" :title="$t('tooltips.addWebview')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-        {{ $t('toolbar.addWebview') }}
-      </button>
-      <div class="separator"></div>
-      <button class="tool-btn" @click="addElement('status')" :title="$t('tooltips.addStatus')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-        {{ $t('toolbar.addStatus') }}
-      </button>
-      <button class="tool-btn" @click="addElement('percentage')" :title="$t('tooltips.addPercentage')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 11C9.43 11 11 9.43 11 7.5S9.43 4 7.5 4 4 5.57 4 7.5 5.57 11 7.5 11zm0-5C8.33 6 9 6.67 9 7.5S8.33 9 7.5 9 6 8.33 6 7.5 6.67 6 7.5 6zM4.81 19h2.13l12-12h-2.13l-12 12zm11.69 1c1.93 0 3.5-1.57 3.5-3.5S18.43 13 16.5 13 13 14.57 13 16.5s1.57 3.5 3.5 3.5zm0-5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg>
-        {{ $t('toolbar.addPercentage') }}
-      </button>
-      <div class="separator"></div>
-      <button class="tool-btn" @click="selectBackground" :title="$t('tooltips.selectBackground')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-        {{ $t('toolbar.background') }}
+        <span class="btn-label">{{ $t('toolbar.addWebview') }}</span>
       </button>
     </div>
 
-    <!-- Center: Canvas Tools -->
+    <!-- Status Elements -->
+    <div class="toolbar-group">
+      <button class="tool-btn" @click="addElement('status')" :title="$t('tooltips.addStatus')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+        <span class="btn-label">{{ $t('toolbar.addStatus') }}</span>
+      </button>
+      <button class="tool-btn" @click="addElement('percentage')" :title="$t('tooltips.addPercentage')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 11C9.43 11 11 9.43 11 7.5S9.43 4 7.5 4 4 5.57 4 7.5 5.57 11 7.5 11zm0-5C8.33 6 9 6.67 9 7.5S8.33 9 7.5 9 6 8.33 6 7.5 6.67 6 7.5 6zM4.81 19h2.13l12-12h-2.13l-12 12zm11.69 1c1.93 0 3.5-1.57 3.5-3.5S18.43 13 16.5 13 13 14.57 13 16.5s1.57 3.5 3.5 3.5zm0-5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg>
+        <span class="btn-label">{{ $t('toolbar.addPercentage') }}</span>
+      </button>
+    </div>
+
+    <!-- Background -->
+    <div class="toolbar-group">
+      <button class="tool-btn" @click="selectBackground" :title="$t('tooltips.selectBackground')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+        <span class="btn-label">{{ $t('toolbar.background') }}</span>
+      </button>
+    </div>
+
+    <!-- Grid -->
     <div class="toolbar-group">
       <button
         class="tool-btn icon-only"
@@ -114,7 +120,10 @@ function sendToBack() {
       >
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4v2h-8V4h8zm-8 4h8v2h-8V8zM4 8h4v6H4V8zm8 6h8v2h-8v-2zm0 4h8v2h-8v-2zM4 16h4v4H4v-4zM4 4h4v2H4V4z"/></svg>
       </button>
-      <div class="separator"></div>
+    </div>
+
+    <!-- Zoom -->
+    <div class="toolbar-group">
       <button class="tool-btn icon-only" @click="uiStore.zoomOut" :title="$t('tooltips.zoomOut')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7z"/></svg>
       </button>
@@ -127,9 +136,8 @@ function sendToBack() {
       </button>
     </div>
 
-    <!-- Right: Edit Tools -->
+    <!-- Layers -->
     <div class="toolbar-group">
-      <!-- Layer controls -->
       <button
         class="tool-btn icon-only"
         @click="bringToFront"
@@ -146,17 +154,22 @@ function sendToBack() {
       >
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm8-2h8v8h-8v-8zm2 2v4h4v-4h-4z" opacity="0.5"/><path d="M15 15l-6-6" stroke="currentColor" stroke-width="2"/></svg>
       </button>
-      <div class="separator"></div>
-      <!-- Refresh button -->
+    </div>
+
+    <!-- Refresh -->
+    <div class="toolbar-group">
       <button
         class="tool-btn"
         @click="refreshAll"
         :title="$t('toolbar.refresh')"
       >
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-        {{ $t('toolbar.refresh') }}
+        <span class="btn-label">{{ $t('toolbar.refresh') }}</span>
       </button>
-      <div class="separator"></div>
+    </div>
+
+    <!-- Delete -->
+    <div class="toolbar-group">
       <button
         class="tool-btn danger"
         @click="deleteSelected"
@@ -164,8 +177,12 @@ function sendToBack() {
         :title="$t('toolbar.delete')"
       >
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-        {{ $t('toolbar.delete') }}
+        <span class="btn-label">{{ $t('toolbar.delete') }}</span>
       </button>
+    </div>
+
+    <!-- Properties -->
+    <div class="toolbar-group">
       <button
         class="tool-btn"
         @click="uiStore.togglePropertiesPanel"
@@ -173,7 +190,7 @@ function sendToBack() {
         :title="$t('toolbar.properties')"
       >
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
-        {{ $t('toolbar.properties') }}
+        <span class="btn-label">{{ $t('toolbar.properties') }}</span>
       </button>
     </div>
   </div>
@@ -181,20 +198,23 @@ function sendToBack() {
 
 <style scoped>
 .toolbar {
-  height: 48px;
+  min-height: 48px;
+  height: auto;
   background-color: #333333;
   border-bottom: 1px solid #3e3e42;
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  gap: 8px;
+  padding: 4px 12px;
+  gap: 4px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .toolbar-group {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .toolbar-group:not(:last-child)::after {
@@ -266,5 +286,16 @@ function sendToBack() {
   color: #9d9d9d;
   min-width: 40px;
   text-align: center;
+}
+
+@media (max-width: 1024px) {
+  .btn-label,
+  .group-label {
+    display: none;
+  }
+
+  .toolbar-group:not(:last-child)::after {
+    display: none;
+  }
 }
 </style>

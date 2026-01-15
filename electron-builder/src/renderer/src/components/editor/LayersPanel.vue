@@ -64,7 +64,12 @@ function getTypeIcon(type: string) {
 }
 
 function getElementName(element: any) {
-  return element.name || element.text || `${element.type} ${element.id.slice(-4)}`
+  // For elements with text content, show text first
+  if (element.type === 'button' || element.type === 'label' || element.type === 'status' || element.type === 'percentage') {
+    return element.text || element.name || `${element.type} ${element.id.slice(-4)}`
+  }
+  // For other elements, show name or type
+  return element.name || `${element.type} ${element.id.slice(-4)}`
 }
 </script>
 
@@ -74,16 +79,16 @@ function getElementName(element: any) {
       <h3>📚 {{ t('layers.title') }}</h3>
       <button class="close-btn" @click="uiStore.toggleLayersPanel">✕</button>
     </div>
-    
+
     <div class="layers-list">
       <div class="layer-info">
         <small>{{ t('layers.dragInfo') }}</small>
       </div>
-      
+
       <div
         v-for="element in sortedElements"
         :key="element.id"
-        :class="['layer-item', { 
+        :class="['layer-item', {
           selected: element.id === projectStore.selectedElementId,
           hidden: element.visible === false,
           locked: element.locked
@@ -93,17 +98,17 @@ function getElementName(element: any) {
         <span class="layer-icon">{{ getTypeIcon(element.type) }}</span>
         <span class="layer-name">{{ getElementName(element) }}</span>
         <span class="layer-zindex">z:{{ element.zIndex || 0 }}</span>
-        
+
         <div class="layer-actions">
-          <button 
-            class="layer-btn" 
+          <button
+            class="layer-btn"
             @click.stop="toggleVisibility(element.id)"
             :title="element.visible === false ? t('layers.show') : t('layers.hide')"
           >
             {{ element.visible === false ? '👁️‍🗨️' : '👁️' }}
           </button>
-          <button 
-            class="layer-btn" 
+          <button
+            class="layer-btn"
             @click.stop="toggleLock(element.id)"
             :title="element.locked ? t('layers.unlock') : t('layers.lock')"
           >
@@ -114,13 +119,13 @@ function getElementName(element: any) {
           <button class="layer-btn danger" @click.stop="deleteElement(element.id)" :title="t('layers.delete')">🗑️</button>
         </div>
       </div>
-      
+
       <div v-if="sortedElements.length === 0" class="empty-layers">
         <p>{{ t('layers.noElements') }}</p>
         <small>{{ t('layers.useToolbar') }}</small>
       </div>
     </div>
-    
+
     <!-- Quick actions -->
     <div class="layers-footer" v-if="projectStore.selectedElementId">
       <button @click="bringToFront(projectStore.selectedElementId!)" class="footer-btn">

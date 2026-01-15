@@ -8,10 +8,7 @@ const { t } = useI18n()
 const projectStore = useProjectStore()
 const uiStore = useUiStore()
 
-function selectImageMode() {
-  projectStore.updateConfig({ uiMode: 'image' })
-  uiStore.setActiveTab('design')
-}
+
 
 // Função desativada temporariamente - modo HTML
 // function selectHtmlMode() {
@@ -65,13 +62,6 @@ async function handleSaveProject() {
 
 <template>
   <div class="sidebar">
-    <!-- Logo/Title -->
-    <div class="sidebar-header">
-      <h1 class="logo-text">AutoPatch Builder</h1>
-      <p class="logo-subtitle">{{ t('sidebar.subtitle') }}</p>
-    </div>
-
-    <!-- Project Actions -->
     <div class="sidebar-actions">
       <button class="action-btn" @click="handleOpenProject">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V6h5.17l2 2H20v10z"/></svg>
@@ -83,61 +73,24 @@ async function handleSaveProject() {
       </button>
     </div>
 
-    <!-- Interface Type Selection -->
-    <div class="sidebar-section">
-      <div class="section-title">{{ t('sidebar.interfaceType') }}</div>
-      
-      <!-- Image Mode -->
-      <div 
-        class="mode-card"
-        :class="{ active: projectStore.project.config.uiMode === 'image' }"
-        @click="selectImageMode"
-      >
-        <div class="mode-icon">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-        </div>
-        <div class="mode-info">
-          <div class="mode-title">{{ t('sidebar.imageMode') }}</div>
-          <div class="mode-desc">{{ t('sidebar.imageModeDesc') }}</div>
-        </div>
-      </div>
-
-      <!-- HTML Mode (desativado temporariamente) -->
-      <!-- 
-      <div 
-        class="mode-card"
-        :class="{ active: projectStore.project.config.uiMode === 'html' }"
-        @click="selectHtmlMode"
-      >
-        <div class="mode-icon html">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
-        </div>
-        <div class="mode-info">
-          <div class="mode-title">Modo HTML/CSS/JS</div>
-          <div class="mode-desc">Interface web totalmente customizadas</div>
-        </div>
-      </div>
-      -->
-    </div>
-
     <!-- Server Config Section -->
     <div class="sidebar-section">
       <div class="section-title">{{ t('sidebar.server') }}</div>
-      
+
       <div class="config-field">
         <label>{{ t('sidebar.serverName') }}:</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           :value="projectStore.project.config.serverName"
           @input="projectStore.updateConfig({ serverName: ($event.target as HTMLInputElement).value })"
           :placeholder="t('sidebar.serverNamePlaceholder')"
         />
       </div>
-      
+
       <div class="config-field">
         <label>{{ t('sidebar.patchlistUrl') }}:</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           :value="projectStore.project.config.patchListUrl"
           @input="projectStore.updateConfig({ patchListUrl: ($event.target as HTMLInputElement).value })"
           placeholder="https://yourserver.com/patchlist.txt"
@@ -146,8 +99,8 @@ async function handleSaveProject() {
 
       <div class="config-field">
         <label>{{ t('sidebar.patchlistFile') }}:</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           value="patchlist.txt"
           disabled
           placeholder="patchlist.txt"
@@ -156,8 +109,8 @@ async function handleSaveProject() {
 
       <div class="config-field">
         <label>{{ t('sidebar.patchesFolder') }}:</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           value="patches/"
           disabled
           placeholder="patches/"
@@ -168,11 +121,11 @@ async function handleSaveProject() {
     <!-- Game Config Section -->
     <div class="sidebar-section">
       <div class="section-title">{{ t('sidebar.gameConfig') }}</div>
-      
+
       <div class="config-field">
         <label>{{ t('sidebar.mainGrf') }}:</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           :value="projectStore.project.config.grfFiles[0] || 'data.grf'"
           @input="projectStore.updateConfig({ grfFiles: [($event.target as HTMLInputElement).value] })"
           placeholder="data.grf"
@@ -181,8 +134,8 @@ async function handleSaveProject() {
 
       <div class="config-field">
         <label>{{ t('sidebar.gameExe') }}:</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           :value="projectStore.project.config.clientExe"
           @input="projectStore.updateConfig({ clientExe: ($event.target as HTMLInputElement).value })"
           placeholder="ragexe.exe"
