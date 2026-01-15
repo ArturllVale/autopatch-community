@@ -187,7 +187,7 @@ async function handleSaveProject() {
 .sidebar-actions {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 15px 16px;
   border-bottom: 1px solid #3e3e42;
 }
 
