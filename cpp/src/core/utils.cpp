@@ -301,49 +301,47 @@ namespace autopatch
     // Hash/CRC
     // ============================================================================
 
-    static uint32_t crc32_table[256] = {0};
-    static bool crc32_table_initialized = false;
-
-    static void InitCrc32Table()
-    {
-        if (crc32_table_initialized)
-            return;
-
-        for (uint32_t i = 0; i < 256; i++)
-        {
-            uint32_t crc = i;
-            for (int j = 0; j < 8; j++)
-            {
-                crc = (crc >> 1) ^ (crc & 1 ? 0xEDB88320 : 0);
-            }
-            crc32_table[i] = crc;
-        }
-
-        crc32_table_initialized = true;
-    }
-
     uint32_t Crc32(const void *data, size_t size)
     {
-        InitCrc32Table();
+        uLong crc = crc32(0L, Z_NULL, 0);
+        const Bytef *ptr = static_cast<const Bytef *>(data);
+        size_t remaining = size;
+        const size_t CHUNK_SIZE = 0x40000000; // 1GB
 
-        uint32_t crc = 0xFFFFFFFF;
-        const uint8_t *bytes = static_cast<const uint8_t *>(data);
-
-        for (size_t i = 0; i < size; i++)
+        while (remaining > 0)
         {
-            crc = crc32_table[(crc ^ bytes[i]) & 0xFF] ^ (crc >> 8);
+            uInt chunk = (remaining > CHUNK_SIZE) ? static_cast<uInt>(CHUNK_SIZE) : static_cast<uInt>(remaining);
+            crc = crc32(crc, ptr, chunk);
+            ptr += chunk;
+            remaining -= chunk;
         }
 
-        return crc ^ 0xFFFFFFFF;
+        return static_cast<uint32_t>(crc);
     }
 
     uint32_t Crc32File(const std::wstring &path)
     {
-        auto data = ReadAllBytes(path);
-        if (data.empty())
+        std::ifstream file(path, std::ios::binary);
+        if (!file.is_open())
+        {
             return 0;
+        }
 
-        return Crc32(data.data(), data.size());
+        constexpr size_t bufferSize = 256 * 1024; // 256KB
+        std::vector<char> buffer(bufferSize);
+        uLong crc = crc32(0L, Z_NULL, 0);
+
+        while (file)
+        {
+            file.read(buffer.data(), bufferSize);
+            std::streamsize count = file.gcount();
+            if (count > 0)
+            {
+                crc = crc32(crc, reinterpret_cast<const Bytef *>(buffer.data()), static_cast<uInt>(count));
+            }
+        }
+
+        return static_cast<uint32_t>(crc);
     }
 
     std::string Md5(const void *data, size_t size)
@@ -383,11 +381,61 @@ namespace autopatch
 
     std::string Md5File(const std::wstring &path)
     {
-        auto data = ReadAllBytes(path);
-        if (data.empty())
+        std::ifstream file(path, std::ios::binary);
+        if (!file.is_open())
+        {
             return "";
+        }
 
-        return Md5(data.data(), data.size());
+        HCRYPTPROV hProv = 0;
+        HCRYPTHASH hHash = 0;
+        std::string result;
+
+        if (!CryptAcquireContextW(&hProv, nullptr, nullptr, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+        {
+            return "";
+        }
+
+        if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
+        {
+            constexpr size_t bufferSize = 256 * 1024; // 256KB
+            std::vector<char> buffer(bufferSize);
+            bool success = true;
+
+            while (file)
+            {
+                file.read(buffer.data(), bufferSize);
+                std::streamsize count = file.gcount();
+                if (count > 0)
+                {
+                    if (!CryptHashData(hHash, reinterpret_cast<const BYTE *>(buffer.data()), static_cast<DWORD>(count), 0))
+                    {
+                        success = false;
+                        break;
+                    }
+                }
+            }
+
+            if (success)
+            {
+                BYTE hash[16];
+                DWORD hashLen = 16;
+
+                if (CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0))
+                {
+                    std::stringstream ss;
+                    for (int i = 0; i < 16; i++)
+                    {
+                        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+                    }
+                    result = ss.str();
+                }
+            }
+            CryptDestroyHash(hHash);
+        }
+
+        CryptReleaseContext(hProv, 0);
+        return result;
     }
 
     // ============================================================================
