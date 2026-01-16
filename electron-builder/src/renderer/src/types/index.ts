@@ -41,7 +41,7 @@ export interface UIElement {
   height: number
   text: string
   action?: string            // Para botões: start_game, check_files, settings, close, minimize, exit
-  
+
   // Fonte
   fontName?: string
   fontSize?: number
@@ -50,13 +50,13 @@ export interface UIElement {
   fontItalic?: boolean
   textAlign?: 'left' | 'center' | 'right'
   textVerticalAlign?: 'top' | 'middle' | 'bottom'
-  
+
   // Aparência base
   backgroundColor?: string
   backgroundImage?: string   // Caminho para imagem de fundo
   borderColor?: string
   borderWidth?: number
-  
+
   // Estados (para botões e elementos interativos)
   states?: {
     normal?: ElementState
@@ -64,10 +64,10 @@ export interface UIElement {
     pressed?: ElementState
     disabled?: ElementState
   }
-  
+
   // Efeitos visuais
   effects?: ElementEffects
-  
+
   // Box específico
   boxStyle?: {
     fillColor: string
@@ -76,7 +76,7 @@ export interface UIElement {
     borderWidth: number
     borderRadius: number
   }
-  
+
   // WebView específico (para exibir conteúdo web externo)
   webviewConfig?: {
     url: string              // URL da página a ser exibida
@@ -85,12 +85,12 @@ export interface UIElement {
     borderWidth: number      // Largura da borda
     backgroundColor: string  // Cor de fundo enquanto carrega
   }
-  
+
   // Controle de visibilidade e camadas
   visible?: boolean
   locked?: boolean           // Se true, não pode ser movido/editado
   zIndex?: number            // Ordem de renderização
-  
+
   isSelected?: boolean
 }
 
@@ -104,6 +104,16 @@ export interface ProgressBarConfig {
   borderColor: string
 }
 
+// Configuração do background (imagem de fundo)
+export interface BackgroundConfig {
+  imagePath: string           // Caminho da imagem de fundo
+  positionX: number           // Posição X em pixels (padrão 0)
+  positionY: number           // Posição Y em pixels (padrão 0)
+  scale: number               // Escala (1 = 100%, 0.5 = 50%, 2 = 200%, etc.)
+  fitMode: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down' // Modo de ajuste
+  locked: boolean             // Travado para prevenir arrastar acidental
+}
+
 // Configuração de vídeo de fundo
 export interface VideoBackgroundConfig {
   enabled: boolean
@@ -112,7 +122,7 @@ export interface VideoBackgroundConfig {
   autoplay: boolean        // Se deve iniciar automaticamente
   muted: boolean           // Se deve iniciar sem som
   showControls: boolean    // Se mostra botões play/pause
-  
+
   // Estilo do botão de controle
   controlButton?: {
     x: number              // Posição X do botão
@@ -149,8 +159,9 @@ export interface ProjectConfig {
   // Elementos (modo imagem)
   elements: UIElement[]
   progressBar: ProgressBarConfig
-  backgroundImagePath?: string
-  
+  background?: BackgroundConfig   // Configurações do background
+  backgroundImagePath?: string    // Mantido para retrocompatibilidade
+
   // Vídeo de fundo (opcional)
   videoBackground?: VideoBackgroundConfig
 
@@ -222,6 +233,15 @@ export function createDefaultProject(): Project {
         fillColor: '#00ff00',
         borderColor: '#666666'
       },
+      // Configuração do background
+      background: {
+        imagePath: '',
+        positionX: 0,
+        positionY: 0,
+        scale: 1,
+        fitMode: 'cover',
+        locked: false
+      },
       // Vídeo de fundo (desabilitado por padrão)
       videoBackground: {
         enabled: false,
@@ -267,14 +287,14 @@ function getDefaultHtml(): string {
         <button id="btn-close" class="btn-control btn-close">×</button>
       </div>
     </div>
-    
+
     <div class="content">
       <div class="news-panel">
         <h2>Notícias</h2>
         <div id="news-content">Carregando notícias...</div>
       </div>
     </div>
-    
+
     <div class="footer">
       <div class="status-area">
         <span id="status-text">Pronto para iniciar</span>
@@ -451,10 +471,10 @@ function getDefaultJs(): string {
 
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Patcher loaded');
-  
+
   // Simula carregamento de notícias
   setTimeout(function() {
-    document.getElementById('news-content').innerHTML = 
+    document.getElementById('news-content').innerHTML =
       '<p>Bem-vindo ao servidor!</p>' +
       '<p>Use o botão abaixo para iniciar o jogo.</p>';
   }, 500);

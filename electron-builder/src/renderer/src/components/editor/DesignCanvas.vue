@@ -48,8 +48,27 @@ const videoBtnStartY = ref(0)
 const videoBtnElementStartX = ref(0)
 const videoBtnElementStartY = ref(0)
 
+// Background drag state
+const isDraggingBackground = ref(false)
+const bgDragStartX = ref(0)
+const bgDragStartY = ref(0)
+const backgroundStartX = ref(0)
+const backgroundStartY = ref(0)
+
 // Background image - use a ref to store the data URL
 const backgroundDataUrl = ref<string>('')
+
+// Background config computed
+const backgroundConfig = computed(() => {
+  return projectStore.project.config.background || {
+    imagePath: '',
+    positionX: 0,
+    positionY: 0,
+    scale: 1,
+    fitMode: 'cover' as const,
+    locked: false
+  }
+})
 
 // Watch for background path changes and load the image
 async function loadBackgroundImage(path: string) {
@@ -147,21 +166,45 @@ watch(
 // Combined canvas style
 const combinedCanvasStyle = computed(() => {
   const borderRadius = projectStore.project.config.windowBorderRadius || 0
+  const bg = backgroundConfig.value
   const base = {
     width: `${projectStore.project.config.windowWidth}px`,
     height: `${projectStore.project.config.windowHeight}px`,
     transform: `scale(${uiStore.canvasZoom})`,
     transformOrigin: 'top left',
     borderRadius: borderRadius > 0 ? `${borderRadius}px` : '0',
-    overflow: borderRadius > 0 ? 'hidden' : 'visible'
+    overflow: borderRadius > 0 ? 'hidden' : 'visible',
+    cursor: uiStore.isBackgroundSelected && !bg.locked ? 'move' : 'default'
   } as Record<string, string>
 
-  // Background
+  // Background with new properties
   if (backgroundDataUrl.value) {
     base.backgroundImage = `url("${backgroundDataUrl.value}")`
-    base.backgroundSize = 'cover'
-    base.backgroundPosition = 'center'
-    console.log('[BG DEBUG] Combined style has backgroundImage set')
+
+    // Calculate background-size based on fitMode and scale
+    const fitMode = bg.fitMode || 'cover'
+    const scale = bg.scale ?? 1
+
+    if (fitMode === 'none') {
+      // Original size with scale applied
+      base.backgroundSize = `${scale * 100}%`
+    } else if (fitMode === 'fill') {
+      // Stretch to fill
+      base.backgroundSize = '100% 100%'
+    } else if (scale !== 1 && (fitMode === 'cover' || fitMode === 'contain')) {
+      // Apply scale transformation
+      base.backgroundSize = `${scale * 100}%`
+    } else {
+      // Use CSS fit mode directly
+      base.backgroundSize = fitMode
+    }
+
+    // Apply position offset
+    const posX = bg.positionX || 0
+    const posY = bg.positionY || 0
+    base.backgroundPosition = `calc(50% + ${posX}px) calc(50% + ${posY}px)`
+
+    base.backgroundRepeat = 'no-repeat'
   }
 
   // Grid
@@ -171,8 +214,8 @@ const combinedCanvasStyle = computed(() => {
     if (base.backgroundImage) {
       // Grid must come FIRST to be on top of background image
       base.backgroundImage = gridBg + ', ' + base.backgroundImage
-      base.backgroundSize = `${size}px ${size}px, ${size}px ${size}px, cover`
-      base.backgroundPosition = `0 0, 0 0, center`
+      base.backgroundSize = `${size}px ${size}px, ${size}px ${size}px, ${base.backgroundSize}`
+      base.backgroundPosition = `0 0, 0 0, ${base.backgroundPosition}`
     } else {
       base.backgroundImage = gridBg
       base.backgroundSize = `${size}px ${size}px, ${size}px ${size}px`
@@ -180,7 +223,6 @@ const combinedCanvasStyle = computed(() => {
     }
   }
 
-  console.log('[BG DEBUG] Final combinedCanvasStyle:', Object.keys(base))
   return base
 })
 
@@ -512,6 +554,17 @@ function onMouseMove(event: MouseEvent) {
 
     updateVideoBtnPosition(newX, newY)
   }
+
+  // Handle background dragging
+  if (isDraggingBackground.value) {
+    const dx = (event.clientX - bgDragStartX.value) / uiStore.canvasZoom
+    const dy = (event.clientY - bgDragStartY.value) / uiStore.canvasZoom
+
+    const newX = backgroundStartX.value + dx
+    const newY = backgroundStartY.value + dy
+
+    projectStore.updateBackground({ positionX: Math.round(newX), positionY: Math.round(newY) })
+  }
 }
 
 function onMouseUp() {
@@ -522,12 +575,40 @@ function onMouseUp() {
   isDraggingProgressBar.value = false
   isResizingProgressBar.value = false
   isDraggingVideoBtn.value = false
+  isDraggingBackground.value = false
 }
 
 function clearSelection() {
   projectStore.selectElement(null)
   uiStore.selectProgressBar(false)
   uiStore.selectVideoButton(false)
+  uiStore.selectBackground(false)
+}
+
+// Background drag functions
+function selectAndDragBackground(event: MouseEvent) {
+  // Only activate if clicked directly on the canvas (not on child elements)
+  // This prevents blocking element dragging
+  if (event.target !== event.currentTarget) {
+    return
+  }
+
+  const bg = backgroundConfig.value
+
+  // Select the background
+  projectStore.selectElement(null)
+  uiStore.selectProgressBar(false)
+  uiStore.selectVideoButton(false)
+  uiStore.selectBackground(true)
+
+  // If not locked and has image, start drag
+  if (!bg.locked && backgroundDataUrl.value) {
+    isDraggingBackground.value = true
+    bgDragStartX.value = event.clientX
+    bgDragStartY.value = event.clientY
+    backgroundStartX.value = bg.positionX || 0
+    backgroundStartY.value = bg.positionY || 0
+  }
 }
 
 // Progress bar functions
@@ -822,8 +903,10 @@ onUnmounted(() => {
     <div :class="canvasContainerClass" @click="clearSelection">
       <div class="canvas-scroll">
         <div
-          class="design-canvas"
+          :class="['design-canvas', { 'bg-selected': uiStore.isBackgroundSelected }]"
           :style="combinedCanvasStyle"
+          @mousedown="selectAndDragBackground($event)"
+          @click.stop
         >
           <!-- Elements -->
           <div
@@ -831,17 +914,17 @@ onUnmounted(() => {
             :key="element.id"
             :class="getElementClass(element)"
             :style="getElementStyle(element)"
-            @mousedown="startDrag(element, $event)"
-            @click="selectElement(element, $event)"
+            @mousedown.stop="startDrag(element, $event)"
+            @click.stop="selectElement(element, $event)"
           >
-            <span class="element-label">{{ getElementLabel(element) }}</span>
+            <span class="element-inner-text">{{ getElementLabel(element) }}</span>
 
             <!-- Resize handles (only for selected) -->
             <template v-if="element.id === projectStore.selectedElementId">
-              <div class="resize-handle nw" @mousedown="startResizeElement(element, 'nw', $event)"></div>
-              <div class="resize-handle ne" @mousedown="startResizeElement(element, 'ne', $event)"></div>
-              <div class="resize-handle sw" @mousedown="startResizeElement(element, 'sw', $event)"></div>
-              <div class="resize-handle se" @mousedown="startResizeElement(element, 'se', $event)"></div>
+              <div class="resize-handle nw" @mousedown.stop="startResizeElement(element, 'nw', $event)"></div>
+              <div class="resize-handle ne" @mousedown.stop="startResizeElement(element, 'ne', $event)"></div>
+              <div class="resize-handle sw" @mousedown.stop="startResizeElement(element, 'sw', $event)"></div>
+              <div class="resize-handle se" @mousedown.stop="startResizeElement(element, 'se', $event)"></div>
             </template>
           </div>
 
@@ -856,8 +939,8 @@ onUnmounted(() => {
               backgroundColor: projectStore.project.config.progressBar.backgroundColor,
               borderColor: projectStore.project.config.progressBar.borderColor
             }"
-            @mousedown="startDragProgressBar($event)"
-            @click="selectProgressBar($event)"
+            @mousedown.stop="startDragProgressBar($event)"
+            @click.stop="selectProgressBar($event)"
           >
             <div
               class="progress-fill"
@@ -870,10 +953,10 @@ onUnmounted(() => {
 
             <!-- Resize handles for progress bar (only when selected) -->
             <template v-if="uiStore.isProgressBarSelected">
-              <div class="resize-handle nw" @mousedown="startResizeProgressBar('nw', $event)"></div>
-              <div class="resize-handle ne" @mousedown="startResizeProgressBar('ne', $event)"></div>
-              <div class="resize-handle sw" @mousedown="startResizeProgressBar('sw', $event)"></div>
-              <div class="resize-handle se" @mousedown="startResizeProgressBar('se', $event)"></div>
+              <div class="resize-handle nw" @mousedown.stop="startResizeProgressBar('nw', $event)"></div>
+              <div class="resize-handle ne" @mousedown.stop="startResizeProgressBar('ne', $event)"></div>
+              <div class="resize-handle sw" @mousedown.stop="startResizeProgressBar('sw', $event)"></div>
+              <div class="resize-handle se" @mousedown.stop="startResizeProgressBar('se', $event)"></div>
             </template>
           </div>
 
@@ -882,8 +965,8 @@ onUnmounted(() => {
             v-if="videoConfig?.enabled && videoConfig?.showControls"
             :class="['video-control-btn-preview', { selected: uiStore.isVideoButtonSelected }]"
             :style="videoBtnStyle"
-            @mousedown="startDragVideoBtn($event)"
-            @click="selectVideoBtn($event)"
+            @mousedown.stop="startDragVideoBtn($event)"
+            @click.stop="selectVideoBtn($event)"
           >
             <!-- Play/Pause Icon -->
             <svg viewBox="0 0 24 24" class="video-btn-icon" :style="{ fill: videoBtnConfig.iconColor }">
@@ -1028,8 +1111,13 @@ onUnmounted(() => {
   background-color: #2d2d30;
 }
 
+.design-canvas.bg-selected {
+  box-shadow: 0 0 0 3px #4caf50, 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
 .canvas-element {
   position: absolute;
+  pointer-events: auto !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1053,13 +1141,25 @@ onUnmounted(() => {
 }
 
 .element-label {
-  background-color: transparent;
+  /* Ensure it captures clicks even if transparent */
+  background-color: rgba(255, 255, 255, 0.01);
   border: 1px dashed rgba(255, 255, 255, 0.3);
+  pointer-events: auto !important;
+}
+
+.element-inner-text {
+  pointer-events: none;
+  white-space: pre-wrap;
+  text-align: inherit;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .element-status {
   background-color: rgba(0, 255, 128, 0.1);
   border: 1px dashed #00ff80;
+  pointer-events: auto !important;
 }
 
 .element-percentage {

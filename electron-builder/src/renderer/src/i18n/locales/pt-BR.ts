@@ -222,6 +222,26 @@ export default {
     borderWidth: 'Espessura da Borda'
   },
 
+  // Background settings
+  backgroundSettings: {
+    title: 'Configurações do Background',
+    position: 'Posição',
+    scale: 'Escala',
+    fitMode: 'Modo de Ajuste',
+    locked: 'Travado (impedir arraste)',
+    modes: {
+      cover: 'Cover (preencher)',
+      contain: 'Contain (caber)',
+      fill: 'Esticar',
+      none: 'Original',
+      scaleDown: 'Reduzir se necessário'
+    },
+    reset: 'Resetar Posição',
+    selectImage: 'Selecionar Imagem',
+    noImage: 'Nenhuma imagem selecionada',
+    dragTip: 'Clique e arraste para mover a imagem'
+  },
+
   // Button Actions
   actions: {
     startGame: 'Iniciar Jogo',

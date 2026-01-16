@@ -22,7 +22,8 @@ export const useUiStore = defineStore('ui', () => {
   const gridSize = ref(10)
   const isProgressBarSelected = ref(false)
   const isVideoButtonSelected = ref(false)
-  
+  const isBackgroundSelected = ref(false)
+
   // Refresh counter (incrementing forces reactivity)
   const refreshCounter = ref(0)
 
@@ -100,12 +101,26 @@ export const useUiStore = defineStore('ui', () => {
 
   function selectProgressBar(selected: boolean) {
     isProgressBarSelected.value = selected
-    if (selected) isVideoButtonSelected.value = false
+    if (selected) {
+      isVideoButtonSelected.value = false
+      isBackgroundSelected.value = false
+    }
   }
 
   function selectVideoButton(selected: boolean) {
     isVideoButtonSelected.value = selected
-    if (selected) isProgressBarSelected.value = false
+    if (selected) {
+      isProgressBarSelected.value = false
+      isBackgroundSelected.value = false
+    }
+  }
+
+  function selectBackground(selected: boolean) {
+    isBackgroundSelected.value = selected
+    if (selected) {
+      isProgressBarSelected.value = false
+      isVideoButtonSelected.value = false
+    }
   }
 
   function refreshAll() {
@@ -131,6 +146,7 @@ export const useUiStore = defineStore('ui', () => {
     gridSize,
     isProgressBarSelected,
     isVideoButtonSelected,
+    isBackgroundSelected,
     refreshCounter,
     // Actions
     setActiveTab,
@@ -151,6 +167,7 @@ export const useUiStore = defineStore('ui', () => {
     setGridSize,
     selectProgressBar,
     selectVideoButton,
+    selectBackground,
     refreshAll
   }
 })

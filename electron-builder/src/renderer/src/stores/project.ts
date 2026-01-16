@@ -3,7 +3,8 @@ import { ref, computed } from 'vue'
 import type {
   Project,
   UIElement,
-  ElementType
+  ElementType,
+  BackgroundConfig
 } from '../types'
 import {
   createDefaultProject as createProject,
@@ -69,7 +70,23 @@ export const useProjectStore = defineStore('project', () => {
         opacity: 100
       }
     }
-    
+
+    // Ensure background has all required fields with defaults (migration from old projects)
+    if (!data.config.background) {
+      data.config.background = {
+        imagePath: data.config.backgroundImagePath || '',
+        positionX: 0,
+        positionY: 0,
+        scale: 1,
+        fitMode: 'cover',
+        locked: false
+      }
+    }
+    // Sync backgroundImagePath with background.imagePath for retrocompatibility
+    if (data.config.background.imagePath) {
+      data.config.backgroundImagePath = data.config.background.imagePath
+    }
+
     project.value = data
     project.value.isDirty = false
     selectedElementId.value = null
@@ -170,7 +187,7 @@ export const useProjectStore = defineStore('project', () => {
       element.zIndex = currentZ + 1
     } else {
       // Find the closest one above
-      const closest = elementsAbove.reduce((prev, curr) => 
+      const closest = elementsAbove.reduce((prev, curr) =>
         (curr.zIndex || 0) < (prev.zIndex || 0) ? curr : prev
       )
       // Swap z-indices
@@ -194,7 +211,7 @@ export const useProjectStore = defineStore('project', () => {
       element.zIndex = currentZ - 1
     } else {
       // Find the closest one below
-      const closest = elementsBelow.reduce((prev, curr) => 
+      const closest = elementsBelow.reduce((prev, curr) =>
         (curr.zIndex || 0) > (prev.zIndex || 0) ? curr : prev
       )
       // Swap z-indices
@@ -237,7 +254,30 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   function setBackgroundImage(path: string) {
+    // Update both for retrocompatibility
     project.value.config.backgroundImagePath = path
+    if (project.value.config.background) {
+      project.value.config.background.imagePath = path
+    }
+    markDirty()
+  }
+
+  function updateBackground(updates: Partial<BackgroundConfig>) {
+    if (!project.value.config.background) {
+      project.value.config.background = {
+        imagePath: '',
+        positionX: 0,
+        positionY: 0,
+        scale: 1,
+        fitMode: 'cover',
+        locked: false
+      }
+    }
+    Object.assign(project.value.config.background, updates)
+    // Sync imagePath with backgroundImagePath for retrocompatibility
+    if (updates.imagePath !== undefined) {
+      project.value.config.backgroundImagePath = updates.imagePath
+    }
     markDirty()
   }
 
@@ -298,6 +338,7 @@ export const useProjectStore = defineStore('project', () => {
     resizeElement,
     updateConfig,
     setBackgroundImage,
+    updateBackground,
     setWindowSize,
     setWindowBorderRadius,
     setUiMode,

@@ -289,6 +289,60 @@ function getGlowValue(key: string, defaultValue: any = '') {
   if (!element.value?.effects?.glow) return defaultValue
   return (element.value.effects.glow as any)[key] ?? defaultValue
 }
+
+// Background configuration
+const backgroundConfig = computed(() => {
+  return projectStore.project.config.background || {
+    imagePath: '',
+    positionX: 0,
+    positionY: 0,
+    scale: 1,
+    fitMode: 'cover' as const,
+    locked: false
+  }
+})
+
+function updateBackgroundConfig(key: string, value: any) {
+  projectStore.updateBackground({ [key]: value })
+}
+
+function resetBackgroundPosition() {
+  projectStore.updateBackground({ positionX: 0, positionY: 0 })
+}
+
+async function selectBackgroundImageFile() {
+  try {
+    const result = await window.electron.ipcRenderer.invoke('dialog:open-file', {
+      title: t('backgroundSettings.selectImage'),
+      filters: [{ name: t('properties.images'), extensions: ['png', 'jpg', 'jpeg', 'bmp'] }]
+    })
+    if (result) {
+      projectStore.setBackgroundImage(result)
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const fitModeOptions = computed(() => [
+  { value: 'cover', label: t('backgroundSettings.modes.cover') },
+  { value: 'contain', label: t('backgroundSettings.modes.contain') },
+  { value: 'fill', label: t('backgroundSettings.modes.fill') },
+  { value: 'none', label: t('backgroundSettings.modes.none') },
+  { value: 'scale-down', label: t('backgroundSettings.modes.scaleDown') }
+])
+
+// Background layer functions
+function selectBackgroundLayer() {
+  projectStore.selectElement(null)
+  uiStore.selectProgressBar(false)
+  uiStore.selectVideoButton(false)
+  uiStore.selectBackground(true)
+}
+
+function toggleBackgroundLock() {
+  projectStore.updateBackground({ locked: !backgroundConfig.value.locked })
+}
 </script>
 
 <template>
@@ -298,8 +352,105 @@ function getGlowValue(key: string, defaultValue: any = '') {
     </div>
 
     <div class="panel-content">
+      <!-- Background properties (when background selected) -->
+      <template v-if="uiStore.isBackgroundSelected">
+        <!-- Type indicator -->
+        <div class="property-section">
+          <div class="element-header">
+            <span class="type-badge background">🖼️ Background</span>
+          </div>
+        </div>
+
+        <!-- Image selector -->
+        <div class="property-section">
+          <div class="section-title">🖼️ {{ t('backgroundSettings.selectImage') }}</div>
+          <div class="file-input-row">
+            <input
+              type="text"
+              :value="backgroundConfig.imagePath || ''"
+              readonly
+              class="file-path"
+              :placeholder="t('backgroundSettings.noImage')"
+            />
+            <button @click="selectBackgroundImageFile" class="select-btn">📁</button>
+          </div>
+        </div>
+
+        <!-- Position -->
+        <div class="property-section">
+          <div class="section-title">📐 {{ t('backgroundSettings.position') }}</div>
+          <div class="property-grid-4">
+            <label>
+              <span>X</span>
+              <input
+                type="number"
+                :value="backgroundConfig.positionX"
+                @input="updateBackgroundConfig('positionX', Number(($event.target as HTMLInputElement).value))"
+                :disabled="backgroundConfig.locked"
+              />
+            </label>
+            <label>
+              <span>Y</span>
+              <input
+                type="number"
+                :value="backgroundConfig.positionY"
+                @input="updateBackgroundConfig('positionY', Number(($event.target as HTMLInputElement).value))"
+                :disabled="backgroundConfig.locked"
+              />
+            </label>
+          </div>
+          <button class="reset-btn mt-8" @click="resetBackgroundPosition" :disabled="backgroundConfig.locked">
+            🔄 {{ t('backgroundSettings.reset') }}
+          </button>
+        </div>
+
+        <!-- Scale -->
+        <div class="property-section">
+          <div class="section-title">🔍 {{ t('backgroundSettings.scale') }}: {{ Math.round(backgroundConfig.scale * 100) }}%</div>
+          <input
+            type="range"
+            min="10"
+            max="300"
+            :value="backgroundConfig.scale * 100"
+            @input="updateBackgroundConfig('scale', Number(($event.target as HTMLInputElement).value) / 100)"
+            :disabled="backgroundConfig.locked"
+            class="full-width"
+          />
+        </div>
+
+        <!-- Fit Mode -->
+        <div class="property-section">
+          <div class="section-title">📏 {{ t('backgroundSettings.fitMode') }}</div>
+          <select
+            :value="backgroundConfig.fitMode"
+            @change="updateBackgroundConfig('fitMode', ($event.target as HTMLSelectElement).value)"
+            :disabled="backgroundConfig.locked"
+            class="full-width"
+          >
+            <option v-for="opt in fitModeOptions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Lock toggle -->
+        <div class="property-section">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              :checked="backgroundConfig.locked"
+              @change="updateBackgroundConfig('locked', ($event.target as HTMLInputElement).checked)"
+            />
+            <span>🔒 {{ t('backgroundSettings.locked') }}</span>
+          </label>
+          <div class="info-box mt-8">
+            💡 {{ t('backgroundSettings.dragTip') }}
+          </div>
+        </div>
+      </template>
+
       <!-- No selection -->
-      <div v-if="!element" class="no-selection">
+      <div v-else-if="!element" class="no-selection">
         <div class="empty-icon">
           <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
             <path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm12 4c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3zm-9 8c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1H6v-1z"/>
@@ -1076,9 +1227,29 @@ function getGlowValue(key: string, defaultValue: any = '') {
       <div class="layers-header" @click="isLayersExpanded = !isLayersExpanded">
         <span class="collapse-icon">{{ isLayersExpanded ? '▼' : '▶' }}</span>
         <h3>{{ t('layers.title') }}</h3>
-        <span class="layer-count">{{ sortedElements.length }}</span>
+        <span class="layer-count">{{ sortedElements.length + 1 }}</span>
       </div>
       <div v-show="isLayersExpanded" class="layers-list">
+        <!-- Background Layer (always at bottom) -->
+        <div
+          class="layer-item layer-background"
+          :class="{ selected: uiStore.isBackgroundSelected, locked: backgroundConfig.locked }"
+          @click="selectBackgroundLayer"
+        >
+          <span class="layer-icon">🖼️</span>
+          <span class="layer-name">Background</span>
+          <span class="layer-zindex">z:bg</span>
+          <div class="layer-actions">
+            <button
+              class="layer-btn"
+              :class="{ active: !backgroundConfig.locked }"
+              :title="backgroundConfig.locked ? t('layers.unlock') : t('layers.lock')"
+              @click.stop="toggleBackgroundLock"
+            >
+              {{ backgroundConfig.locked ? '🔒' : '🔓' }}
+            </button>
+          </div>
+        </div>
         <div
           v-for="layerEl in sortedElements"
           :key="layerEl.id"
@@ -1222,6 +1393,7 @@ function getGlowValue(key: string, defaultValue: any = '') {
 .type-badge.percentage { background-color: #ffc107; color: #1e1e1e; }
 .type-badge.box { background-color: #9c27b0; color: white; }
 .type-badge.image { background-color: #ff5722; color: white; }
+.type-badge.background { background-color: #4caf50; color: white; }
 
 .section-title {
   font-size: 11px;
@@ -1629,5 +1801,48 @@ select {
 .file-input-row .select-btn:hover {
   background: #444;
   border-color: #666;
+}
+
+/* Background Section */
+.background-section {
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.background-section.bg-selected {
+  border-color: #4caf50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.reset-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.reset-btn:hover:not(:disabled) {
+  background: #444;
+  border-color: #666;
+}
+
+.reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Background layer in layers list */
+.layer-background {
+  border-left: 3px solid #4caf50;
+  background: rgba(76, 175, 80, 0.05);
+}
+
+.layer-background.selected {
+  background: rgba(76, 175, 80, 0.15);
 }
 </style>
