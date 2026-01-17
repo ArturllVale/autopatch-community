@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <winhttp.h>
 #include <fstream>
+#include <vector>
 
 #pragma comment(lib, "winhttp.lib")
 
@@ -41,19 +42,12 @@ namespace autopatch
         m_userAgent = userAgent;
     }
 
-    HttpResponse HttpClient::Get(const std::wstring &url)
+    bool HttpClient::OpenRequest(const std::wstring &url, const wchar_t *method, void *&hConnectOut, void *&hRequestOut, std::wstring &error)
     {
-        return Get(url, nullptr);
-    }
-
-    HttpResponse HttpClient::Get(const std::wstring &url, ProgressCallback progress)
-    {
-        HttpResponse response;
-
         if (!m_hSession)
         {
-            response.error = L"HTTP session not initialized";
-            return response;
+            error = L"HTTP session not initialized";
+            return false;
         }
 
         // Parse URL
@@ -69,30 +63,54 @@ namespace autopatch
 
         if (!WinHttpCrackUrl(url.c_str(), 0, 0, &urlComp))
         {
-            response.error = L"Invalid URL";
-            return response;
+            error = L"Invalid URL";
+            return false;
         }
 
         // Connect
         HINTERNET hConnect = WinHttpConnect(m_hSession, hostName, urlComp.nPort, 0);
         if (!hConnect)
         {
-            response.error = L"Connection failed";
-            return response;
+            error = L"Connection failed";
+            return false;
         }
 
         // Create request
         DWORD flags = (urlComp.nScheme == INTERNET_SCHEME_HTTPS) ? WINHTTP_FLAG_SECURE : 0;
         HINTERNET hRequest = WinHttpOpenRequest(
-            hConnect, L"GET", urlPath, nullptr,
+            hConnect, method, urlPath, nullptr,
             WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, flags);
 
         if (!hRequest)
         {
             WinHttpCloseHandle(hConnect);
-            response.error = L"Request creation failed";
+            error = L"Request creation failed";
+            return false;
+        }
+
+        hConnectOut = hConnect;
+        hRequestOut = hRequest;
+        return true;
+    }
+
+    HttpResponse HttpClient::Get(const std::wstring &url)
+    {
+        return Get(url, nullptr);
+    }
+
+    HttpResponse HttpClient::Get(const std::wstring &url, ProgressCallback progress)
+    {
+        HttpResponse response;
+        void *hConnectVoid = nullptr;
+        void *hRequestVoid = nullptr;
+
+        if (!OpenRequest(url, L"GET", hConnectVoid, hRequestVoid, response.error))
+        {
             return response;
         }
+
+        HINTERNET hConnect = static_cast<HINTERNET>(hConnectVoid);
+        HINTERNET hRequest = static_cast<HINTERNET>(hRequestVoid);
 
         // Send request
         if (!WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
@@ -162,70 +180,103 @@ namespace autopatch
     bool HttpClient::DownloadFile(const std::wstring &url, const std::wstring &outputPath,
                                   ProgressCallback progress)
     {
-        auto response = Get(url, progress);
-        if (!response.success)
+        void *hConnectVoid = nullptr;
+        void *hRequestVoid = nullptr;
+        std::wstring error;
+
+        // Use helper to setup connection
+        if (!OpenRequest(url, L"GET", hConnectVoid, hRequestVoid, error))
         {
             return false;
         }
 
+        HINTERNET hConnect = static_cast<HINTERNET>(hConnectVoid);
+        HINTERNET hRequest = static_cast<HINTERNET>(hRequestVoid);
+
+        bool success = false;
         std::ofstream file(outputPath, std::ios::binary);
-        if (!file.is_open())
+
+        if (file.is_open())
         {
-            return false;
+            // Send request
+            if (WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+                WinHttpReceiveResponse(hRequest, nullptr))
+            {
+                DWORD statusCode = 0;
+                DWORD size = sizeof(statusCode);
+                WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+                                  WINHTTP_HEADER_NAME_BY_INDEX, &statusCode, &size, WINHTTP_NO_HEADER_INDEX);
+
+                if (statusCode >= 200 && statusCode < 300)
+                {
+                    // Get content length for progress
+                    DWORD contentLength = 0;
+                    size = sizeof(contentLength);
+                    WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_CONTENT_LENGTH | WINHTTP_QUERY_FLAG_NUMBER,
+                                        WINHTTP_HEADER_NAME_BY_INDEX, &contentLength, &size, WINHTTP_NO_HEADER_INDEX);
+
+                    DWORD bytesAvailable = 0;
+                    uint64_t totalRead = 0;
+                    success = true; // Assume success initially
+
+                    // Stream data to file
+                    while (WinHttpQueryDataAvailable(hRequest, &bytesAvailable) && bytesAvailable > 0)
+                    {
+                        std::vector<char> buffer(bytesAvailable);
+                        DWORD bytesRead = 0;
+
+                        if (WinHttpReadData(hRequest, buffer.data(), bytesAvailable, &bytesRead))
+                        {
+                            file.write(buffer.data(), bytesRead);
+                            if (!file.good())
+                            {
+                                success = false;
+                                break;
+                            }
+
+                            totalRead += bytesRead;
+                            if (progress)
+                            {
+                                progress(totalRead, contentLength);
+                            }
+                        }
+                        else
+                        {
+                            success = false;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
-        file.write(response.body.data(), response.body.size());
-        return true;
+        if (hRequest) WinHttpCloseHandle(hRequest);
+        if (hConnect) WinHttpCloseHandle(hConnect);
+
+        if (!success && file.is_open())
+        {
+            file.close();
+            // Delete partial file
+            ::DeleteFileW(outputPath.c_str());
+        }
+
+        return success;
     }
 
     HttpResponse HttpClient::Post(const std::wstring &url, const std::string &body,
                                   const std::wstring &contentType)
     {
         HttpResponse response;
+        void *hConnectVoid = nullptr;
+        void *hRequestVoid = nullptr;
 
-        if (!m_hSession)
+        if (!OpenRequest(url, L"POST", hConnectVoid, hRequestVoid, response.error))
         {
-            response.error = L"HTTP session not initialized";
             return response;
         }
 
-        // Parse URL
-        URL_COMPONENTS urlComp = {};
-        urlComp.dwStructSize = sizeof(urlComp);
-
-        wchar_t hostName[256] = {};
-        wchar_t urlPath[2048] = {};
-        urlComp.lpszHostName = hostName;
-        urlComp.dwHostNameLength = 256;
-        urlComp.lpszUrlPath = urlPath;
-        urlComp.dwUrlPathLength = 2048;
-
-        if (!WinHttpCrackUrl(url.c_str(), 0, 0, &urlComp))
-        {
-            response.error = L"Invalid URL";
-            return response;
-        }
-
-        // Connect
-        HINTERNET hConnect = WinHttpConnect(m_hSession, hostName, urlComp.nPort, 0);
-        if (!hConnect)
-        {
-            response.error = L"Connection failed";
-            return response;
-        }
-
-        // Create request
-        DWORD flags = (urlComp.nScheme == INTERNET_SCHEME_HTTPS) ? WINHTTP_FLAG_SECURE : 0;
-        HINTERNET hRequest = WinHttpOpenRequest(
-            hConnect, L"POST", urlPath, nullptr,
-            WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, flags);
-
-        if (!hRequest)
-        {
-            WinHttpCloseHandle(hConnect);
-            response.error = L"Request creation failed";
-            return response;
-        }
+        HINTERNET hConnect = static_cast<HINTERNET>(hConnectVoid);
+        HINTERNET hRequest = static_cast<HINTERNET>(hRequestVoid);
 
         // Add content-type header
         std::wstring headers = L"Content-Type: " + contentType;

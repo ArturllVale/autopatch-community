@@ -46,6 +46,8 @@ namespace autopatch
         void SetUserAgent(const std::wstring &userAgent);
 
     private:
+        bool OpenRequest(const std::wstring &url, const wchar_t *method, void *&hConnect, void *&hRequest, std::wstring &error);
+
         void *m_hSession = nullptr;
         int m_timeout = 30;
         std::wstring m_userAgent = L"AutoPatcher/1.0";
