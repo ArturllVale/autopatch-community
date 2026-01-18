@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <vector>
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "Crypt32.lib")
@@ -339,11 +340,26 @@ namespace autopatch
 
     uint32_t Crc32File(const std::wstring &path)
     {
-        auto data = ReadAllBytes(path);
-        if (data.empty())
+        std::ifstream file(path, std::ios::binary);
+        if (!file.is_open())
             return 0;
 
-        return Crc32(data.data(), data.size());
+        constexpr size_t bufferSize = 256 * 1024;
+        std::vector<char> buffer(bufferSize);
+
+        uint32_t crc = crc32(0L, Z_NULL, 0);
+
+        while (file)
+        {
+            file.read(buffer.data(), bufferSize);
+            std::streamsize count = file.gcount();
+            if (count > 0)
+            {
+                crc = crc32(crc, reinterpret_cast<const Bytef *>(buffer.data()), static_cast<uInt>(count));
+            }
+        }
+
+        return crc;
     }
 
     std::string Md5(const void *data, size_t size)
@@ -383,11 +399,58 @@ namespace autopatch
 
     std::string Md5File(const std::wstring &path)
     {
-        auto data = ReadAllBytes(path);
-        if (data.empty())
+        std::ifstream file(path, std::ios::binary);
+        if (!file.is_open() || file.peek() == std::ifstream::traits_type::eof())
             return "";
 
-        return Md5(data.data(), data.size());
+        HCRYPTPROV hProv = 0;
+        HCRYPTHASH hHash = 0;
+        std::string result = "";
+
+        if (!CryptAcquireContextW(&hProv, nullptr, nullptr, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+        {
+            return "";
+        }
+
+        if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
+        {
+            constexpr size_t bufferSize = 256 * 1024;
+            std::vector<char> buffer(bufferSize);
+            bool success = true;
+
+            while (file)
+            {
+                file.read(buffer.data(), bufferSize);
+                std::streamsize count = file.gcount();
+                if (count > 0)
+                {
+                    if (!CryptHashData(hHash, reinterpret_cast<const BYTE *>(buffer.data()), static_cast<DWORD>(count), 0))
+                    {
+                        success = false;
+                        break;
+                    }
+                }
+            }
+
+            if (success)
+            {
+                BYTE hash[16];
+                DWORD hashLen = 16;
+                if (CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0))
+                {
+                    std::stringstream ss;
+                    for (int i = 0; i < 16; i++)
+                    {
+                        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+                    }
+                    result = ss.str();
+                }
+            }
+            CryptDestroyHash(hHash);
+        }
+
+        CryptReleaseContext(hProv, 0);
+        return result;
     }
 
     // ============================================================================
